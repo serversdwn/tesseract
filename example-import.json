@@ -1,0 +1,29 @@
+{
+  "project": {
+    "name": "Project Lyra",
+    "description": "Long-running AI assistant project"
+  },
+  "tasks": [
+    {
+      "title": "Cortex Rewire",
+      "description": "Refactor reasoning layer",
+      "status": "backlog",
+      "subtasks": [
+        {
+          "title": "Reflection → fix backend argument bug",
+          "status": "backlog",
+          "subtasks": [
+            {
+              "title": "Normalize LLM backend arg in reflection calls",
+              "status": "backlog"
+            }
+          ]
+        },
+        {
+          "title": "Reasoning parser cleanup",
+          "status": "backlog"
+        }
+      ]
+    }
+  ]
+}
