@@ -1,0 +1,113 @@
+{
+  "project": {
+    "name": "Project Lyra",
+    "description": "Long-running AI assistant project with modular architecture"
+  },
+  "tasks": [
+    {
+      "title": "Cortex Rewire",
+      "description": "Refactor reasoning layer for improved performance",
+      "status": "backlog",
+      "subtasks": [
+        {
+          "title": "Reflection → fix backend argument bug",
+          "status": "in_progress",
+          "subtasks": [
+            {
+              "title": "Normalize LLM backend arg in reflection calls",
+              "status": "in_progress"
+            },
+            {
+              "title": "Add unit tests for reflection module",
+              "status": "backlog"
+            }
+          ]
+        },
+        {
+          "title": "Reasoning parser cleanup",
+          "status": "backlog",
+          "subtasks": [
+            {
+              "title": "Remove deprecated parse methods",
+              "status": "backlog"
+            },
+            {
+              "title": "Optimize regex patterns",
+              "status": "backlog"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Frontend Overhaul",
+      "description": "Modernize the UI with new component library",
+      "status": "backlog",
+      "subtasks": [
+        {
+          "title": "Migrate to Tailwind CSS",
+          "status": "backlog"
+        },
+        {
+          "title": "Build new component library",
+          "status": "backlog",
+          "subtasks": [
+            {
+              "title": "Button components",
+              "status": "backlog"
+            },
+            {
+              "title": "Form components",
+              "status": "backlog"
+            },
+            {
+              "title": "Modal components",
+              "status": "backlog"
+            }
+          ]
+        },
+        {
+          "title": "Implement dark mode toggle",
+          "status": "backlog"
+        }
+      ]
+    },
+    {
+      "title": "API v2 Implementation",
+      "status": "blocked",
+      "description": "Blocked on database migration completion",
+      "subtasks": [
+        {
+          "title": "Design new REST endpoints",
+          "status": "done"
+        },
+        {
+          "title": "Implement GraphQL layer",
+          "status": "blocked"
+        },
+        {
+          "title": "Add rate limiting",
+          "status": "backlog"
+        }
+      ]
+    },
+    {
+      "title": "Documentation Sprint",
+      "status": "done",
+      "subtasks": [
+        {
+          "title": "API documentation",
+          "status": "done"
+        },
+        {
+          "title": "User guide",
+          "status": "done"
+        },
+        {
+          "title": "Developer setup guide",
+          "status": "done"
+        }
+      ]
+    }
+  ]
+}
