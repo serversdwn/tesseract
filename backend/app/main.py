@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 import json
 
 from . import models, schemas, crud
@@ -230,6 +230,3 @@ def root():
         "message": "Tesseract API - Nested Todo Tree Manager",
         "docs": "/docs"
     }
-
-
-from typing import Optional
