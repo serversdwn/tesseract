@@ -3,10 +3,10 @@ import {
   ChevronDown,
   ChevronRight,
   Plus,
-  Edit2,
-  Trash2,
   Check,
-  X
+  X,
+  Flag,
+  Clock
 } from 'lucide-react'
 import {
   getProjectTaskTree,
@@ -14,6 +14,9 @@ import {
   updateTask,
   deleteTask
 } from '../utils/api'
+import { formatTimeWithTotal } from '../utils/format'
+import TaskMenu from './TaskMenu'
+import TaskForm from './TaskForm'
 
 const STATUS_COLORS = {
   backlog: 'text-gray-400',
@@ -29,13 +32,22 @@ const STATUS_LABELS = {
   done: 'Done'
 }
 
+const FLAG_COLORS = {
+  red: 'bg-red-500',
+  orange: 'bg-orange-500',
+  yellow: 'bg-yellow-500',
+  green: 'bg-green-500',
+  blue: 'bg-blue-500',
+  purple: 'bg-purple-500',
+  pink: 'bg-pink-500'
+}
+
 function TaskNode({ task, projectId, onUpdate, level = 0 }) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(task.title)
   const [editStatus, setEditStatus] = useState(task.status)
   const [showAddSubtask, setShowAddSubtask] = useState(false)
-  const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
 
   const hasSubtasks = task.subtasks && task.subtasks.length > 0
 
@@ -62,18 +74,17 @@ function TaskNode({ task, projectId, onUpdate, level = 0 }) {
     }
   }
 
-  const handleAddSubtask = async (e) => {
-    e.preventDefault()
-    if (!newSubtaskTitle.trim()) return
-
+  const handleAddSubtask = async (taskData) => {
     try {
       await createTask({
         project_id: parseInt(projectId),
         parent_task_id: task.id,
-        title: newSubtaskTitle,
-        status: 'backlog'
+        title: taskData.title,
+        status: 'backlog',
+        tags: taskData.tags,
+        estimated_minutes: taskData.estimated_minutes,
+        flag_color: taskData.flag_color
       })
-      setNewSubtaskTitle('')
       setShowAddSubtask(false)
       setIsExpanded(true)
       onUpdate()
@@ -139,10 +150,43 @@ function TaskNode({ task, projectId, onUpdate, level = 0 }) {
         ) : (
           <>
             <div className="flex-1">
-              <span className="text-gray-200">{task.title}</span>
-              <span className={`ml-3 text-xs ${STATUS_COLORS[task.status]}`}>
-                {STATUS_LABELS[task.status]}
-              </span>
+              <div className="flex items-center gap-2">
+                {/* Flag indicator */}
+                {task.flag_color && FLAG_COLORS[task.flag_color] && (
+                  <Flag size={14} className={`${FLAG_COLORS[task.flag_color].replace('bg-', 'text-')}`} fill="currentColor" />
+                )}
+                <span className="text-gray-200">{task.title}</span>
+                <span className={`ml-2 text-xs ${STATUS_COLORS[task.status]}`}>
+                  {STATUS_LABELS[task.status]}
+                </span>
+              </div>
+
+              {/* Metadata row */}
+              {(formatTimeWithTotal(task) || (task.tags && task.tags.length > 0)) && (
+                <div className="flex items-center gap-3 mt-1">
+                  {/* Time estimate */}
+                  {formatTimeWithTotal(task) && (
+                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                      <Clock size={12} />
+                      <span>{formatTimeWithTotal(task)}</span>
+                    </div>
+                  )}
+
+                  {/* Tags */}
+                  {task.tags && task.tags.length > 0 && (
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {task.tags.map((tag, idx) => (
+                        <span
+                          key={idx}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-cyber-orange/20 text-cyber-orange border border-cyber-orange/30 rounded"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Actions */}
@@ -154,20 +198,12 @@ function TaskNode({ task, projectId, onUpdate, level = 0 }) {
               >
                 <Plus size={16} />
               </button>
-              <button
-                onClick={() => setIsEditing(true)}
-                className="text-gray-400 hover:text-gray-200"
-                title="Edit"
-              >
-                <Edit2 size={16} />
-              </button>
-              <button
-                onClick={handleDelete}
-                className="text-gray-600 hover:text-red-400"
-                title="Delete"
-              >
-                <Trash2 size={16} />
-              </button>
+              <TaskMenu
+                task={task}
+                onUpdate={onUpdate}
+                onDelete={handleDelete}
+                onEdit={() => setIsEditing(true)}
+              />
             </div>
           </>
         )}
@@ -176,29 +212,11 @@ function TaskNode({ task, projectId, onUpdate, level = 0 }) {
       {/* Add Subtask Form */}
       {showAddSubtask && (
         <div style={{ marginLeft: `${level * 1.5}rem` }} className="mt-2">
-          <form onSubmit={handleAddSubtask} className="flex gap-2">
-            <input
-              type="text"
-              value={newSubtaskTitle}
-              onChange={(e) => setNewSubtaskTitle(e.target.value)}
-              placeholder="New subtask title..."
-              className="flex-1 px-3 py-2 bg-cyber-darker border border-cyber-orange/50 rounded text-gray-100 text-sm focus:outline-none focus:border-cyber-orange"
-              autoFocus
-            />
-            <button
-              type="submit"
-              className="px-3 py-2 bg-cyber-orange text-cyber-darkest rounded hover:bg-cyber-orange-bright text-sm font-semibold"
-            >
-              Add
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowAddSubtask(false)}
-              className="px-3 py-2 text-gray-400 hover:text-gray-200 text-sm"
-            >
-              Cancel
-            </button>
-          </form>
+          <TaskForm
+            onSubmit={handleAddSubtask}
+            onCancel={() => setShowAddSubtask(false)}
+            submitLabel="Add Subtask"
+          />
         </div>
       )}
 
@@ -225,7 +243,6 @@ function TreeView({ projectId }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showAddRoot, setShowAddRoot] = useState(false)
-  const [newTaskTitle, setNewTaskTitle] = useState('')
 
   useEffect(() => {
     loadTasks()
@@ -243,18 +260,17 @@ function TreeView({ projectId }) {
     }
   }
 
-  const handleAddRootTask = async (e) => {
-    e.preventDefault()
-    if (!newTaskTitle.trim()) return
-
+  const handleAddRootTask = async (taskData) => {
     try {
       await createTask({
         project_id: parseInt(projectId),
         parent_task_id: null,
-        title: newTaskTitle,
-        status: 'backlog'
+        title: taskData.title,
+        status: 'backlog',
+        tags: taskData.tags,
+        estimated_minutes: taskData.estimated_minutes,
+        flag_color: taskData.flag_color
       })
-      setNewTaskTitle('')
       setShowAddRoot(false)
       loadTasks()
     } catch (err) {
@@ -285,29 +301,11 @@ function TreeView({ projectId }) {
 
       {showAddRoot && (
         <div className="mb-4">
-          <form onSubmit={handleAddRootTask} className="flex gap-2">
-            <input
-              type="text"
-              value={newTaskTitle}
-              onChange={(e) => setNewTaskTitle(e.target.value)}
-              placeholder="New task title..."
-              className="flex-1 px-3 py-2 bg-cyber-darker border border-cyber-orange/50 rounded text-gray-100 focus:outline-none focus:border-cyber-orange"
-              autoFocus
-            />
-            <button
-              type="submit"
-              className="px-4 py-2 bg-cyber-orange text-cyber-darkest rounded hover:bg-cyber-orange-bright font-semibold"
-            >
-              Add
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowAddRoot(false)}
-              className="px-4 py-2 text-gray-400 hover:text-gray-200"
-            >
-              Cancel
-            </button>
-          </form>
+          <TaskForm
+            onSubmit={handleAddRootTask}
+            onCancel={() => setShowAddRoot(false)}
+            submitLabel="Add Task"
+          />
         </div>
       )}
 

@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, Check, X } from 'lucide-react'
+import { Plus, Check, X, Flag, Clock } from 'lucide-react'
 import {
   getProjectTasks,
   createTask,
   updateTask,
   deleteTask
 } from '../utils/api'
+import { formatTimeWithTotal } from '../utils/format'
+import TaskMenu from './TaskMenu'
+import TaskForm from './TaskForm'
 
 const STATUSES = [
   { key: 'backlog', label: 'Backlog', color: 'border-gray-600' },
@@ -13,6 +16,16 @@ const STATUSES = [
   { key: 'blocked', label: 'Blocked', color: 'border-red-500' },
   { key: 'done', label: 'Done', color: 'border-green-500' }
 ]
+
+const FLAG_COLORS = {
+  red: 'bg-red-500',
+  orange: 'bg-orange-500',
+  yellow: 'bg-yellow-500',
+  green: 'bg-green-500',
+  blue: 'bg-blue-500',
+  purple: 'bg-purple-500',
+  pink: 'bg-pink-500'
+}
 
 function TaskCard({ task, allTasks, onUpdate, onDragStart }) {
   const [isEditing, setIsEditing] = useState(false)
@@ -78,26 +91,56 @@ function TaskCard({ task, allTasks, onUpdate, onDragStart }) {
         <>
           <div className="flex justify-between items-start">
             <div className="flex-1">
-              <div className="text-gray-200 text-sm">{task.title}</div>
+              <div className="flex items-center gap-2 text-sm">
+                {/* Flag indicator */}
+                {task.flag_color && FLAG_COLORS[task.flag_color] && (
+                  <Flag size={12} className={`${FLAG_COLORS[task.flag_color].replace('bg-', 'text-')}`} fill="currentColor" />
+                )}
+                <span className="text-gray-200">{task.title}</span>
+              </div>
+
+              {/* Parent task context */}
               {parentTask && (
                 <div className="text-xs text-gray-500 mt-1">
                   ↳ subtask of: <span className="text-cyber-orange">{parentTask.title}</span>
                 </div>
               )}
+
+              {/* Metadata row */}
+              {(formatTimeWithTotal(task, allTasks) || (task.tags && task.tags.length > 0)) && (
+                <div className="flex items-center gap-2 mt-2">
+                  {/* Time estimate */}
+                  {formatTimeWithTotal(task, allTasks) && (
+                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                      <Clock size={11} />
+                      <span>{formatTimeWithTotal(task, allTasks)}</span>
+                    </div>
+                  )}
+
+                  {/* Tags */}
+                  {task.tags && task.tags.length > 0 && (
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {task.tags.map((tag, idx) => (
+                        <span
+                          key={idx}
+                          className="inline-flex items-center px-1.5 py-0.5 text-xs bg-cyber-orange/20 text-cyber-orange border border-cyber-orange/30 rounded"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
+
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button
-                onClick={() => setIsEditing(true)}
-                className="text-gray-400 hover:text-gray-200"
-              >
-                <Edit2 size={14} />
-              </button>
-              <button
-                onClick={handleDelete}
-                className="text-gray-600 hover:text-red-400"
-              >
-                <Trash2 size={14} />
-              </button>
+              <TaskMenu
+                task={task}
+                onUpdate={onUpdate}
+                onDelete={handleDelete}
+                onEdit={() => setIsEditing(true)}
+              />
             </div>
           </div>
         </>
@@ -108,20 +151,18 @@ function TaskCard({ task, allTasks, onUpdate, onDragStart }) {
 
 function KanbanColumn({ status, tasks, allTasks, projectId, onUpdate, onDrop, onDragOver }) {
   const [showAddTask, setShowAddTask] = useState(false)
-  const [newTaskTitle, setNewTaskTitle] = useState('')
 
-  const handleAddTask = async (e) => {
-    e.preventDefault()
-    if (!newTaskTitle.trim()) return
-
+  const handleAddTask = async (taskData) => {
     try {
       await createTask({
         project_id: parseInt(projectId),
         parent_task_id: null,
-        title: newTaskTitle,
-        status: status.key
+        title: taskData.title,
+        status: status.key,
+        tags: taskData.tags,
+        estimated_minutes: taskData.estimated_minutes,
+        flag_color: taskData.flag_color
       })
-      setNewTaskTitle('')
       setShowAddTask(false)
       onUpdate()
     } catch (err) {
@@ -150,31 +191,11 @@ function KanbanColumn({ status, tasks, allTasks, projectId, onUpdate, onDrop, on
 
       {showAddTask && (
         <div className="mb-3">
-          <form onSubmit={handleAddTask}>
-            <input
-              type="text"
-              value={newTaskTitle}
-              onChange={(e) => setNewTaskTitle(e.target.value)}
-              placeholder="Task title..."
-              className="w-full px-2 py-2 bg-cyber-darkest border border-cyber-orange/50 rounded text-gray-100 text-sm focus:outline-none focus:border-cyber-orange mb-2"
-              autoFocus
-            />
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                className="px-3 py-1 bg-cyber-orange text-cyber-darkest rounded hover:bg-cyber-orange-bright text-sm font-semibold"
-              >
-                Add
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowAddTask(false)}
-                className="px-3 py-1 text-gray-400 hover:text-gray-200 text-sm"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
+          <TaskForm
+            onSubmit={handleAddTask}
+            onCancel={() => setShowAddTask(false)}
+            submitLabel="Add Task"
+          />
         </div>
       )}
 

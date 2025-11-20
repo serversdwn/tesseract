@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import ProjectList from './pages/ProjectList'
 import ProjectView from './pages/ProjectView'
+import SearchBar from './components/SearchBar'
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
                 <span className="ml-2 text-xs text-gray-600">v0.1.3</span>
               </h1>
             </div>
+            <SearchBar />
           </div>
         </div>
       </header>
