@@ -8,6 +8,7 @@ import {
 } from '../utils/api'
 import { formatTimeWithTotal } from '../utils/format'
 import TaskMenu from './TaskMenu'
+import TaskForm from './TaskForm'
 
 const STATUSES = [
   { key: 'backlog', label: 'Backlog', color: 'border-gray-600' },
@@ -150,20 +151,18 @@ function TaskCard({ task, allTasks, onUpdate, onDragStart }) {
 
 function KanbanColumn({ status, tasks, allTasks, projectId, onUpdate, onDrop, onDragOver }) {
   const [showAddTask, setShowAddTask] = useState(false)
-  const [newTaskTitle, setNewTaskTitle] = useState('')
 
-  const handleAddTask = async (e) => {
-    e.preventDefault()
-    if (!newTaskTitle.trim()) return
-
+  const handleAddTask = async (taskData) => {
     try {
       await createTask({
         project_id: parseInt(projectId),
         parent_task_id: null,
-        title: newTaskTitle,
-        status: status.key
+        title: taskData.title,
+        status: status.key,
+        tags: taskData.tags,
+        estimated_minutes: taskData.estimated_minutes,
+        flag_color: taskData.flag_color
       })
-      setNewTaskTitle('')
       setShowAddTask(false)
       onUpdate()
     } catch (err) {
@@ -192,31 +191,11 @@ function KanbanColumn({ status, tasks, allTasks, projectId, onUpdate, onDrop, on
 
       {showAddTask && (
         <div className="mb-3">
-          <form onSubmit={handleAddTask}>
-            <input
-              type="text"
-              value={newTaskTitle}
-              onChange={(e) => setNewTaskTitle(e.target.value)}
-              placeholder="Task title..."
-              className="w-full px-2 py-2 bg-cyber-darkest border border-cyber-orange/50 rounded text-gray-100 text-sm focus:outline-none focus:border-cyber-orange mb-2"
-              autoFocus
-            />
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                className="px-3 py-1 bg-cyber-orange text-cyber-darkest rounded hover:bg-cyber-orange-bright text-sm font-semibold"
-              >
-                Add
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowAddTask(false)}
-                className="px-3 py-1 text-gray-400 hover:text-gray-200 text-sm"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
+          <TaskForm
+            onSubmit={handleAddTask}
+            onCancel={() => setShowAddTask(false)}
+            submitLabel="Add Task"
+          />
         </div>
       )}
 

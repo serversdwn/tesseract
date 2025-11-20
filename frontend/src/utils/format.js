@@ -1,4 +1,4 @@
-// Format minutes into display string
+// Format minutes into display string (e.g., "1h 30m" or "45m")
 export function formatTime(minutes) {
   if (!minutes || minutes === 0) return null;
 
@@ -6,8 +6,14 @@ export function formatTime(minutes) {
     return `${minutes}m`;
   }
 
-  const hours = minutes / 60;
-  return `${hours.toFixed(1)}h`;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+
+  if (mins === 0) {
+    return `${hours}h`;
+  }
+
+  return `${hours}h ${mins}m`;
 }
 
 // Format tags as comma-separated string
@@ -16,58 +22,63 @@ export function formatTags(tags) {
   return tags.join(', ');
 }
 
-// Recursively calculate total time estimate including all subtasks
-export function calculateTotalTime(task) {
-  let total = task.estimated_minutes || 0;
+// Calculate sum of all LEAF descendant estimates (hierarchical structure)
+export function calculateLeafTime(task) {
+  // If no subtasks, this is a leaf - return its own estimate
+  if (!task.subtasks || task.subtasks.length === 0) {
+    return task.estimated_minutes || 0;
+  }
 
-  if (task.subtasks && task.subtasks.length > 0) {
-    for (const subtask of task.subtasks) {
-      total += calculateTotalTime(subtask);
-    }
+  // Has subtasks, so sum up all leaf descendants
+  let total = 0;
+  for (const subtask of task.subtasks) {
+    total += calculateLeafTime(subtask);
   }
 
   return total;
 }
 
-// Calculate total time for a task from a flat list of all tasks
-export function calculateTotalTimeFlat(task, allTasks) {
-  let total = task.estimated_minutes || 0;
-
-  // Find all direct children
+// Calculate sum of all LEAF descendant estimates (flat task list)
+export function calculateLeafTimeFlat(task, allTasks) {
+  // Find direct children
   const children = allTasks.filter(t => t.parent_task_id === task.id);
 
-  // Recursively add their times
+  // If no children, this is a leaf - return its own estimate
+  if (children.length === 0) {
+    return task.estimated_minutes || 0;
+  }
+
+  // Has children, so sum up all leaf descendants
+  let total = 0;
   for (const child of children) {
-    total += calculateTotalTimeFlat(child, allTasks);
+    total += calculateLeafTimeFlat(child, allTasks);
   }
 
   return total;
 }
 
-// Format time display showing own estimate and total if different
+// Format time display based on leaf calculation logic
 export function formatTimeWithTotal(task, allTasks = null) {
-  const ownTime = task.estimated_minutes || 0;
+  // Check if task has subtasks
+  const hasSubtasks = allTasks
+    ? allTasks.some(t => t.parent_task_id === task.id)
+    : (task.subtasks && task.subtasks.length > 0);
 
-  // If we have a flat task list, use that to calculate total
-  const totalTime = allTasks
-    ? calculateTotalTimeFlat(task, allTasks)
-    : calculateTotalTime(task);
-
-  const subtaskTime = totalTime - ownTime;
-
-  // No time estimates at all
-  if (totalTime === 0) return null;
-
-  // Only own estimate, no subtasks with time
-  if (subtaskTime === 0) {
-    return formatTime(ownTime);
+  // Leaf task: use own estimate
+  if (!hasSubtasks) {
+    return formatTime(task.estimated_minutes);
   }
 
-  // Only subtask estimates, no own estimate
-  if (ownTime === 0) {
-    return `(${formatTime(totalTime)} from subtasks)`;
+  // Parent task: calculate sum of leaf descendants
+  const leafTotal = allTasks
+    ? calculateLeafTimeFlat(task, allTasks)
+    : calculateLeafTime(task);
+
+  // If no leaf estimates exist, fall back to own estimate
+  if (leafTotal === 0) {
+    return formatTime(task.estimated_minutes);
   }
 
-  // Both own and subtask estimates
-  return `${formatTime(ownTime)} (${formatTime(totalTime)} total)`;
+  // Show leaf total
+  return formatTime(leafTotal);
 }

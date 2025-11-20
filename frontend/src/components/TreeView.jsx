@@ -16,6 +16,7 @@ import {
 } from '../utils/api'
 import { formatTimeWithTotal } from '../utils/format'
 import TaskMenu from './TaskMenu'
+import TaskForm from './TaskForm'
 
 const STATUS_COLORS = {
   backlog: 'text-gray-400',
@@ -47,7 +48,6 @@ function TaskNode({ task, projectId, onUpdate, level = 0 }) {
   const [editTitle, setEditTitle] = useState(task.title)
   const [editStatus, setEditStatus] = useState(task.status)
   const [showAddSubtask, setShowAddSubtask] = useState(false)
-  const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
 
   const hasSubtasks = task.subtasks && task.subtasks.length > 0
 
@@ -74,18 +74,17 @@ function TaskNode({ task, projectId, onUpdate, level = 0 }) {
     }
   }
 
-  const handleAddSubtask = async (e) => {
-    e.preventDefault()
-    if (!newSubtaskTitle.trim()) return
-
+  const handleAddSubtask = async (taskData) => {
     try {
       await createTask({
         project_id: parseInt(projectId),
         parent_task_id: task.id,
-        title: newSubtaskTitle,
-        status: 'backlog'
+        title: taskData.title,
+        status: 'backlog',
+        tags: taskData.tags,
+        estimated_minutes: taskData.estimated_minutes,
+        flag_color: taskData.flag_color
       })
-      setNewSubtaskTitle('')
       setShowAddSubtask(false)
       setIsExpanded(true)
       onUpdate()
@@ -213,29 +212,11 @@ function TaskNode({ task, projectId, onUpdate, level = 0 }) {
       {/* Add Subtask Form */}
       {showAddSubtask && (
         <div style={{ marginLeft: `${level * 1.5}rem` }} className="mt-2">
-          <form onSubmit={handleAddSubtask} className="flex gap-2">
-            <input
-              type="text"
-              value={newSubtaskTitle}
-              onChange={(e) => setNewSubtaskTitle(e.target.value)}
-              placeholder="New subtask title..."
-              className="flex-1 px-3 py-2 bg-cyber-darker border border-cyber-orange/50 rounded text-gray-100 text-sm focus:outline-none focus:border-cyber-orange"
-              autoFocus
-            />
-            <button
-              type="submit"
-              className="px-3 py-2 bg-cyber-orange text-cyber-darkest rounded hover:bg-cyber-orange-bright text-sm font-semibold"
-            >
-              Add
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowAddSubtask(false)}
-              className="px-3 py-2 text-gray-400 hover:text-gray-200 text-sm"
-            >
-              Cancel
-            </button>
-          </form>
+          <TaskForm
+            onSubmit={handleAddSubtask}
+            onCancel={() => setShowAddSubtask(false)}
+            submitLabel="Add Subtask"
+          />
         </div>
       )}
 
@@ -262,7 +243,6 @@ function TreeView({ projectId }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showAddRoot, setShowAddRoot] = useState(false)
-  const [newTaskTitle, setNewTaskTitle] = useState('')
 
   useEffect(() => {
     loadTasks()
@@ -280,18 +260,17 @@ function TreeView({ projectId }) {
     }
   }
 
-  const handleAddRootTask = async (e) => {
-    e.preventDefault()
-    if (!newTaskTitle.trim()) return
-
+  const handleAddRootTask = async (taskData) => {
     try {
       await createTask({
         project_id: parseInt(projectId),
         parent_task_id: null,
-        title: newTaskTitle,
-        status: 'backlog'
+        title: taskData.title,
+        status: 'backlog',
+        tags: taskData.tags,
+        estimated_minutes: taskData.estimated_minutes,
+        flag_color: taskData.flag_color
       })
-      setNewTaskTitle('')
       setShowAddRoot(false)
       loadTasks()
     } catch (err) {
@@ -322,29 +301,11 @@ function TreeView({ projectId }) {
 
       {showAddRoot && (
         <div className="mb-4">
-          <form onSubmit={handleAddRootTask} className="flex gap-2">
-            <input
-              type="text"
-              value={newTaskTitle}
-              onChange={(e) => setNewTaskTitle(e.target.value)}
-              placeholder="New task title..."
-              className="flex-1 px-3 py-2 bg-cyber-darker border border-cyber-orange/50 rounded text-gray-100 focus:outline-none focus:border-cyber-orange"
-              autoFocus
-            />
-            <button
-              type="submit"
-              className="px-4 py-2 bg-cyber-orange text-cyber-darkest rounded hover:bg-cyber-orange-bright font-semibold"
-            >
-              Add
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowAddRoot(false)}
-              className="px-4 py-2 text-gray-400 hover:text-gray-200"
-            >
-              Cancel
-            </button>
-          </form>
+          <TaskForm
+            onSubmit={handleAddRootTask}
+            onCancel={() => setShowAddRoot(false)}
+            submitLabel="Add Task"
+          />
         </div>
       )}
 

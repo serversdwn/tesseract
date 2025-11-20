@@ -25,7 +25,13 @@ function TaskMenu({ task, onUpdate, onDelete, onEdit }) {
   const [showTagsEdit, setShowTagsEdit] = useState(false)
   const [showFlagEdit, setShowFlagEdit] = useState(false)
   const [showStatusEdit, setShowStatusEdit] = useState(false)
-  const [editTime, setEditTime] = useState(task.estimated_minutes || '')
+
+  // Calculate hours and minutes from task.estimated_minutes
+  const initialHours = task.estimated_minutes ? Math.floor(task.estimated_minutes / 60) : ''
+  const initialMinutes = task.estimated_minutes ? task.estimated_minutes % 60 : ''
+
+  const [editHours, setEditHours] = useState(initialHours)
+  const [editMinutes, setEditMinutes] = useState(initialMinutes)
   const [editTags, setEditTags] = useState(task.tags ? task.tags.join(', ') : '')
   const menuRef = useRef(null)
 
@@ -48,7 +54,8 @@ function TaskMenu({ task, onUpdate, onDelete, onEdit }) {
 
   const handleUpdateTime = async () => {
     try {
-      const minutes = editTime ? parseInt(editTime) : null
+      const totalMinutes = (parseInt(editHours) || 0) * 60 + (parseInt(editMinutes) || 0)
+      const minutes = totalMinutes > 0 ? totalMinutes : null
       await updateTask(task.id, { estimated_minutes: minutes })
       setShowTimeEdit(false)
       setIsOpen(false)
@@ -125,29 +132,42 @@ function TaskMenu({ task, onUpdate, onDelete, onEdit }) {
             <div className="p-3 border-b border-cyber-orange/20">
               <div className="flex items-center gap-2 mb-2">
                 <Clock size={14} className="text-cyber-orange" />
-                <span className="text-sm text-gray-300">Time Estimate (minutes)</span>
+                <span className="text-sm text-gray-300">Time Estimate</span>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 mb-2">
                 <input
                   type="number"
-                  value={editTime}
-                  onChange={(e) => setEditTime(e.target.value)}
-                  placeholder="Minutes"
+                  min="0"
+                  value={editHours}
+                  onChange={(e) => setEditHours(e.target.value)}
+                  placeholder="Hours"
                   className="flex-1 px-2 py-1 bg-cyber-darker border border-cyber-orange/50 rounded text-gray-100 text-sm focus:outline-none focus:border-cyber-orange"
                   autoFocus
                   onClick={(e) => e.stopPropagation()}
                 />
+                <input
+                  type="number"
+                  min="0"
+                  max="59"
+                  value={editMinutes}
+                  onChange={(e) => setEditMinutes(e.target.value)}
+                  placeholder="Minutes"
+                  className="flex-1 px-2 py-1 bg-cyber-darker border border-cyber-orange/50 rounded text-gray-100 text-sm focus:outline-none focus:border-cyber-orange"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+              <div className="flex gap-2">
                 <button
                   onClick={handleUpdateTime}
-                  className="text-green-400 hover:text-green-300"
+                  className="flex-1 px-2 py-1 text-sm bg-cyber-orange/20 text-cyber-orange rounded hover:bg-cyber-orange/30"
                 >
-                  <Check size={16} />
+                  Save
                 </button>
                 <button
                   onClick={() => setShowTimeEdit(false)}
-                  className="text-gray-400 hover:text-gray-300"
+                  className="px-2 py-1 text-sm text-gray-400 hover:text-gray-300"
                 >
-                  <X size={16} />
+                  Cancel
                 </button>
               </div>
             </div>
