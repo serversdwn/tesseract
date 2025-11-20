@@ -11,6 +11,9 @@ class TaskBase(BaseModel):
     status: TaskStatus = TaskStatus.BACKLOG
     parent_task_id: Optional[int] = None
     sort_order: int = 0
+    estimated_minutes: Optional[int] = None
+    tags: Optional[List[str]] = None
+    flag_color: Optional[str] = None
 
 
 class TaskCreate(TaskBase):
@@ -23,6 +26,9 @@ class TaskUpdate(BaseModel):
     status: Optional[TaskStatus] = None
     parent_task_id: Optional[int] = None
     sort_order: Optional[int] = None
+    estimated_minutes: Optional[int] = None
+    tags: Optional[List[str]] = None
+    flag_color: Optional[str] = None
 
 
 class Task(TaskBase):
@@ -74,6 +80,9 @@ class ImportSubtask(BaseModel):
     title: str
     description: Optional[str] = None
     status: TaskStatus = TaskStatus.BACKLOG
+    estimated_minutes: Optional[int] = None
+    tags: Optional[List[str]] = None
+    flag_color: Optional[str] = None
     subtasks: List['ImportSubtask'] = []
 
 

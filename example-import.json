@@ -8,32 +8,48 @@
       "title": "Cortex Rewire",
       "description": "Refactor reasoning layer for improved performance",
       "status": "backlog",
+      "estimated_minutes": 240,
+      "tags": ["coding", "backend", "refactoring"],
+      "flag_color": "red",
       "subtasks": [
         {
           "title": "Reflection → fix backend argument bug",
           "status": "in_progress",
+          "estimated_minutes": 90,
+          "tags": ["coding", "bug-fix"],
+          "flag_color": "orange",
           "subtasks": [
             {
               "title": "Normalize LLM backend arg in reflection calls",
-              "status": "in_progress"
+              "status": "in_progress",
+              "estimated_minutes": 45,
+              "tags": ["coding"]
             },
             {
               "title": "Add unit tests for reflection module",
-              "status": "backlog"
+              "status": "backlog",
+              "estimated_minutes": 60,
+              "tags": ["testing", "coding"]
             }
           ]
         },
         {
           "title": "Reasoning parser cleanup",
           "status": "backlog",
+          "estimated_minutes": 120,
+          "tags": ["coding", "cleanup"],
           "subtasks": [
             {
               "title": "Remove deprecated parse methods",
-              "status": "backlog"
+              "status": "backlog",
+              "estimated_minutes": 30,
+              "tags": ["coding"]
             },
             {
               "title": "Optimize regex patterns",
-              "status": "backlog"
+              "status": "backlog",
+              "estimated_minutes": 45,
+              "tags": ["coding", "performance"]
             }
           ]
         }
@@ -43,32 +59,47 @@
       "title": "Frontend Overhaul",
       "description": "Modernize the UI with new component library",
       "status": "backlog",
+      "estimated_minutes": 480,
+      "tags": ["frontend", "ui", "coding"],
+      "flag_color": "blue",
       "subtasks": [
         {
           "title": "Migrate to Tailwind CSS",
-          "status": "backlog"
+          "status": "backlog",
+          "estimated_minutes": 180,
+          "tags": ["frontend", "styling"]
         },
         {
           "title": "Build new component library",
           "status": "backlog",
+          "estimated_minutes": 360,
+          "tags": ["frontend", "components"],
           "subtasks": [
             {
               "title": "Button components",
-              "status": "backlog"
+              "status": "backlog",
+              "estimated_minutes": 60,
+              "tags": ["frontend", "components"]
             },
             {
               "title": "Form components",
-              "status": "backlog"
+              "status": "backlog",
+              "estimated_minutes": 120,
+              "tags": ["frontend", "components"]
             },
             {
               "title": "Modal components",
-              "status": "backlog"
+              "status": "backlog",
+              "estimated_minutes": 90,
+              "tags": ["frontend", "components"]
             }
           ]
         },
         {
           "title": "Implement dark mode toggle",
-          "status": "backlog"
+          "status": "backlog",
+          "estimated_minutes": 45,
+          "tags": ["frontend", "ui"]
         }
       ]
     },
@@ -76,36 +107,54 @@
       "title": "API v2 Implementation",
       "status": "blocked",
       "description": "Blocked on database migration completion",
+      "estimated_minutes": 600,
+      "tags": ["backend", "api", "coding"],
+      "flag_color": "yellow",
       "subtasks": [
         {
           "title": "Design new REST endpoints",
-          "status": "done"
+          "status": "done",
+          "estimated_minutes": 120,
+          "tags": ["design", "api"]
         },
         {
           "title": "Implement GraphQL layer",
-          "status": "blocked"
+          "status": "blocked",
+          "estimated_minutes": 300,
+          "tags": ["backend", "graphql", "coding"]
         },
         {
           "title": "Add rate limiting",
-          "status": "backlog"
+          "status": "backlog",
+          "estimated_minutes": 90,
+          "tags": ["backend", "security"]
         }
       ]
     },
     {
       "title": "Documentation Sprint",
       "status": "done",
+      "estimated_minutes": 180,
+      "tags": ["documentation", "writing"],
+      "flag_color": "green",
       "subtasks": [
         {
           "title": "API documentation",
-          "status": "done"
+          "status": "done",
+          "estimated_minutes": 60,
+          "tags": ["documentation"]
         },
         {
           "title": "User guide",
-          "status": "done"
+          "status": "done",
+          "estimated_minutes": 90,
+          "tags": ["documentation", "tutorial"]
         },
         {
           "title": "Developer setup guide",
-          "status": "done"
+          "status": "done",
+          "estimated_minutes": 30,
+          "tags": ["documentation"]
         }
       ]
     }

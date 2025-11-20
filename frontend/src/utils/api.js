@@ -56,3 +56,12 @@ export const importJSON = (data) => fetchAPI('/import-json', {
   method: 'POST',
   body: JSON.stringify(data),
 });
+
+// Search
+export const searchTasks = (query, projectIds = null) => {
+  const params = new URLSearchParams({ query });
+  if (projectIds && projectIds.length > 0) {
+    params.append('project_ids', projectIds.join(','));
+  }
+  return fetchAPI(`/search?${params.toString()}`);
+};

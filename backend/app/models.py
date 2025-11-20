@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
@@ -34,6 +34,9 @@ class Task(Base):
     description = Column(Text, nullable=True)
     status = Column(Enum(TaskStatus), default=TaskStatus.BACKLOG, nullable=False)
     sort_order = Column(Integer, default=0)
+    estimated_minutes = Column(Integer, nullable=True)
+    tags = Column(JSON, nullable=True)
+    flag_color = Column(String(50), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
