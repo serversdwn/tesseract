@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { MoreVertical, Clock, Tag, Flag, Edit2, Trash2, X, Check } from 'lucide-react'
+import { MoreVertical, Clock, Tag, Flag, Edit2, Trash2, X, Check, ListTodo } from 'lucide-react'
 import { updateTask } from '../utils/api'
 
 const FLAG_COLORS = [
@@ -12,11 +12,19 @@ const FLAG_COLORS = [
   { name: 'pink', color: 'bg-pink-500' }
 ]
 
+const STATUSES = [
+  { key: 'backlog', label: 'Backlog', color: 'text-gray-400' },
+  { key: 'in_progress', label: 'In Progress', color: 'text-blue-400' },
+  { key: 'blocked', label: 'Blocked', color: 'text-red-400' },
+  { key: 'done', label: 'Done', color: 'text-green-400' }
+]
+
 function TaskMenu({ task, onUpdate, onDelete, onEdit }) {
   const [isOpen, setIsOpen] = useState(false)
   const [showTimeEdit, setShowTimeEdit] = useState(false)
   const [showTagsEdit, setShowTagsEdit] = useState(false)
   const [showFlagEdit, setShowFlagEdit] = useState(false)
+  const [showStatusEdit, setShowStatusEdit] = useState(false)
   const [editTime, setEditTime] = useState(task.estimated_minutes || '')
   const [editTags, setEditTags] = useState(task.tags ? task.tags.join(', ') : '')
   const menuRef = useRef(null)
@@ -28,6 +36,7 @@ function TaskMenu({ task, onUpdate, onDelete, onEdit }) {
         setShowTimeEdit(false)
         setShowTagsEdit(false)
         setShowFlagEdit(false)
+        setShowStatusEdit(false)
       }
     }
 
@@ -78,6 +87,17 @@ function TaskMenu({ task, onUpdate, onDelete, onEdit }) {
     try {
       await updateTask(task.id, { flag_color: null })
       setShowFlagEdit(false)
+      setIsOpen(false)
+      onUpdate()
+    } catch (err) {
+      alert(`Error: ${err.message}`)
+    }
+  }
+
+  const handleUpdateStatus = async (newStatus) => {
+    try {
+      await updateTask(task.id, { status: newStatus })
+      setShowStatusEdit(false)
       setIsOpen(false)
       onUpdate()
     } catch (err) {
@@ -222,6 +242,42 @@ function TaskMenu({ task, onUpdate, onDelete, onEdit }) {
             >
               <Flag size={14} />
               <span>Set Flag Color</span>
+            </button>
+          )}
+
+          {/* Status Change */}
+          {showStatusEdit ? (
+            <div className="p-3 border-b border-cyber-orange/20">
+              <div className="flex items-center gap-2 mb-2">
+                <ListTodo size={14} className="text-cyber-orange" />
+                <span className="text-sm text-gray-300">Change Status</span>
+              </div>
+              <div className="space-y-1">
+                {STATUSES.map(({ key, label, color }) => (
+                  <button
+                    key={key}
+                    onClick={() => handleUpdateStatus(key)}
+                    className={`w-full text-left px-2 py-1.5 rounded text-sm ${
+                      task.status === key
+                        ? 'bg-cyber-orange/20 border border-cyber-orange/40'
+                        : 'hover:bg-cyber-darker border border-transparent'
+                    } ${color} transition-all`}
+                  >
+                    {label} {task.status === key && '✓'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowStatusEdit(true)
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-cyber-darker text-gray-300 text-sm"
+            >
+              <ListTodo size={14} />
+              <span>Change Status</span>
             </button>
           )}
 

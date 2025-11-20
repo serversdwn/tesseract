@@ -6,7 +6,7 @@ import {
   updateTask,
   deleteTask
 } from '../utils/api'
-import { formatTime } from '../utils/format'
+import { formatTimeWithTotal } from '../utils/format'
 import TaskMenu from './TaskMenu'
 
 const STATUSES = [
@@ -106,13 +106,13 @@ function TaskCard({ task, allTasks, onUpdate, onDragStart }) {
               )}
 
               {/* Metadata row */}
-              {(task.estimated_minutes || (task.tags && task.tags.length > 0)) && (
+              {(formatTimeWithTotal(task, allTasks) || (task.tags && task.tags.length > 0)) && (
                 <div className="flex items-center gap-2 mt-2">
                   {/* Time estimate */}
-                  {task.estimated_minutes && (
+                  {formatTimeWithTotal(task, allTasks) && (
                     <div className="flex items-center gap-1 text-xs text-gray-500">
                       <Clock size={11} />
-                      <span>{formatTime(task.estimated_minutes)}</span>
+                      <span>{formatTimeWithTotal(task, allTasks)}</span>
                     </div>
                   )}
 

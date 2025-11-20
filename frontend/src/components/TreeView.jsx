@@ -14,7 +14,7 @@ import {
   updateTask,
   deleteTask
 } from '../utils/api'
-import { formatTime } from '../utils/format'
+import { formatTimeWithTotal } from '../utils/format'
 import TaskMenu from './TaskMenu'
 
 const STATUS_COLORS = {
@@ -163,13 +163,13 @@ function TaskNode({ task, projectId, onUpdate, level = 0 }) {
               </div>
 
               {/* Metadata row */}
-              {(task.estimated_minutes || (task.tags && task.tags.length > 0)) && (
+              {(formatTimeWithTotal(task) || (task.tags && task.tags.length > 0)) && (
                 <div className="flex items-center gap-3 mt-1">
                   {/* Time estimate */}
-                  {task.estimated_minutes && (
+                  {formatTimeWithTotal(task) && (
                     <div className="flex items-center gap-1 text-xs text-gray-500">
                       <Clock size={12} />
-                      <span>{formatTime(task.estimated_minutes)}</span>
+                      <span>{formatTimeWithTotal(task)}</span>
                     </div>
                   )}
 
