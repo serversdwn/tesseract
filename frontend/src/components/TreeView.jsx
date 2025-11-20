@@ -85,9 +85,8 @@ function TaskNode({ task, projectId, onUpdate, level = 0 }) {
   return (
     <div className="mb-2">
       <div
-        className={`flex items-center gap-2 p-3 bg-cyber-darkest border border-cyber-orange/20 rounded hover:border-cyber-orange/40 transition-all group ${
-          level > 0 ? 'ml-6' : ''
-        }`}
+        style={{ marginLeft: `${level * 1.5}rem` }}
+        className="flex items-center gap-2 p-3 bg-cyber-darkest border border-cyber-orange/20 rounded hover:border-cyber-orange/40 transition-all group"
       >
         {/* Expand/Collapse */}
         {hasSubtasks && (
@@ -176,7 +175,7 @@ function TaskNode({ task, projectId, onUpdate, level = 0 }) {
 
       {/* Add Subtask Form */}
       {showAddSubtask && (
-        <div className={`mt-2 ${level > 0 ? 'ml-6' : ''}`}>
+        <div style={{ marginLeft: `${level * 1.5}rem` }} className="mt-2">
           <form onSubmit={handleAddSubtask} className="flex gap-2">
             <input
               type="text"
