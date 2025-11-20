@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Check, X, Flag } from 'lucide-react'
+import { Plus, Check, X, Flag, Clock } from 'lucide-react'
 import {
   getProjectTasks,
   createTask,

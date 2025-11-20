@@ -5,7 +5,8 @@ import {
   Plus,
   Check,
   X,
-  Flag
+  Flag,
+  Clock
 } from 'lucide-react'
 import {
   getProjectTaskTree,
