@@ -34,7 +34,7 @@ docker-compose up --build
 - Backend: http://localhost:8000 (Swagger docs at `/docs`)
 - Frontend: http://localhost:5173
 
-Docker Compose uses a named volume (`backend-data`) to persist the SQLite file, so you don’t need to create any host directories ahead of time.
+Docker Compose uses a named volume (`backend-data`) to persist the SQLite file, and the backend explicitly points SQLite at `/app/backend/data/data.db` via `SQLALCHEMY_DATABASE_URL` so the path stays consistent inside the container.
 
 ## API Reference
 - `GET /api/projects` — list projects.
