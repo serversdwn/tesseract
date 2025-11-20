@@ -3,10 +3,9 @@ import {
   ChevronDown,
   ChevronRight,
   Plus,
-  Edit2,
-  Trash2,
   Check,
-  X
+  X,
+  Flag
 } from 'lucide-react'
 import {
   getProjectTaskTree,
@@ -14,6 +13,8 @@ import {
   updateTask,
   deleteTask
 } from '../utils/api'
+import { formatTime } from '../utils/format'
+import TaskMenu from './TaskMenu'
 
 const STATUS_COLORS = {
   backlog: 'text-gray-400',
@@ -27,6 +28,16 @@ const STATUS_LABELS = {
   in_progress: 'In Progress',
   blocked: 'Blocked',
   done: 'Done'
+}
+
+const FLAG_COLORS = {
+  red: 'bg-red-500',
+  orange: 'bg-orange-500',
+  yellow: 'bg-yellow-500',
+  green: 'bg-green-500',
+  blue: 'bg-blue-500',
+  purple: 'bg-purple-500',
+  pink: 'bg-pink-500'
 }
 
 function TaskNode({ task, projectId, onUpdate, level = 0 }) {
@@ -139,10 +150,43 @@ function TaskNode({ task, projectId, onUpdate, level = 0 }) {
         ) : (
           <>
             <div className="flex-1">
-              <span className="text-gray-200">{task.title}</span>
-              <span className={`ml-3 text-xs ${STATUS_COLORS[task.status]}`}>
-                {STATUS_LABELS[task.status]}
-              </span>
+              <div className="flex items-center gap-2">
+                {/* Flag indicator */}
+                {task.flag_color && FLAG_COLORS[task.flag_color] && (
+                  <Flag size={14} className={`${FLAG_COLORS[task.flag_color].replace('bg-', 'text-')}`} fill="currentColor" />
+                )}
+                <span className="text-gray-200">{task.title}</span>
+                <span className={`ml-2 text-xs ${STATUS_COLORS[task.status]}`}>
+                  {STATUS_LABELS[task.status]}
+                </span>
+              </div>
+
+              {/* Metadata row */}
+              {(task.estimated_minutes || (task.tags && task.tags.length > 0)) && (
+                <div className="flex items-center gap-3 mt-1">
+                  {/* Time estimate */}
+                  {task.estimated_minutes && (
+                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                      <Clock size={12} />
+                      <span>{formatTime(task.estimated_minutes)}</span>
+                    </div>
+                  )}
+
+                  {/* Tags */}
+                  {task.tags && task.tags.length > 0 && (
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {task.tags.map((tag, idx) => (
+                        <span
+                          key={idx}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-cyber-orange/20 text-cyber-orange border border-cyber-orange/30 rounded"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Actions */}
@@ -154,20 +198,12 @@ function TaskNode({ task, projectId, onUpdate, level = 0 }) {
               >
                 <Plus size={16} />
               </button>
-              <button
-                onClick={() => setIsEditing(true)}
-                className="text-gray-400 hover:text-gray-200"
-                title="Edit"
-              >
-                <Edit2 size={16} />
-              </button>
-              <button
-                onClick={handleDelete}
-                className="text-gray-600 hover:text-red-400"
-                title="Delete"
-              >
-                <Trash2 size={16} />
-              </button>
+              <TaskMenu
+                task={task}
+                onUpdate={onUpdate}
+                onDelete={handleDelete}
+                onEdit={() => setIsEditing(true)}
+              />
             </div>
           </>
         )}
