@@ -111,7 +111,7 @@ function TaskCard({ task, allTasks, onUpdate, onDragStart }) {
                 <div className="flex items-center gap-2 mt-2">
                   {/* Time estimate */}
                   {formatTimeWithTotal(task, allTasks) && (
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                    <div className={`flex items-center gap-1 text-xs text-gray-500 ${task.status === 'done' ? 'line-through' : ''}`}>
                       <Clock size={11} />
                       <span>{formatTimeWithTotal(task, allTasks)}</span>
                     </div>

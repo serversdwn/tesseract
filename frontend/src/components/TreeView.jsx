@@ -166,7 +166,7 @@ function TaskNode({ task, projectId, onUpdate, level = 0 }) {
                 <div className="flex items-center gap-3 mt-1">
                   {/* Time estimate */}
                   {formatTimeWithTotal(task) && (
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                    <div className={`flex items-center gap-1 text-xs text-gray-500 ${task.status === 'done' ? 'line-through' : ''}`}>
                       <Clock size={12} />
                       <span>{formatTimeWithTotal(task)}</span>
                     </div>

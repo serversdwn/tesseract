@@ -92,6 +92,32 @@ def get_task_with_subtasks(db: Session, task_id: int) -> Optional[models.Task]:
     ).filter(models.Task.id == task_id).first()
 
 
+def check_and_update_parent_status(db: Session, parent_id: int):
+    """Check if all children of a parent are done, and mark parent as done if so"""
+    # Get all children of this parent
+    children = db.query(models.Task).filter(
+        models.Task.parent_task_id == parent_id
+    ).all()
+
+    # If no children, nothing to do
+    if not children:
+        return
+
+    # Check if all children are done
+    all_done = all(child.status == models.TaskStatus.DONE for child in children)
+
+    if all_done:
+        # Mark parent as done
+        parent = get_task(db, parent_id)
+        if parent and parent.status != models.TaskStatus.DONE:
+            parent.status = models.TaskStatus.DONE
+            db.commit()
+
+            # Recursively check grandparent
+            if parent.parent_task_id:
+                check_and_update_parent_status(db, parent.parent_task_id)
+
+
 def update_task(
     db: Session, task_id: int, task: schemas.TaskUpdate
 ) -> Optional[models.Task]:
@@ -100,11 +126,23 @@ def update_task(
         return None
 
     update_data = task.model_dump(exclude_unset=True)
+    status_changed = False
+
+    # Check if status is being updated
+    if "status" in update_data:
+        status_changed = True
+        old_status = db_task.status
+
     for key, value in update_data.items():
         setattr(db_task, key, value)
 
     db.commit()
     db.refresh(db_task)
+
+    # If status changed to 'done' and this task has a parent, check if parent should auto-complete
+    if status_changed and db_task.status == models.TaskStatus.DONE and db_task.parent_task_id:
+        check_and_update_parent_status(db, db_task.parent_task_id)
+
     return db_task
 
 
