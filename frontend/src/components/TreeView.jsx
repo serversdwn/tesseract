@@ -80,6 +80,7 @@ function TaskNode({ task, projectId, onUpdate, level = 0 }) {
         project_id: parseInt(projectId),
         parent_task_id: task.id,
         title: taskData.title,
+        description: taskData.description,
         status: 'backlog',
         tags: taskData.tags,
         estimated_minutes: taskData.estimated_minutes,
@@ -187,6 +188,13 @@ function TaskNode({ task, projectId, onUpdate, level = 0 }) {
                   )}
                 </div>
               )}
+
+              {/* Description */}
+              {task.description && (
+                <div className="mt-2 text-xs text-gray-400 italic">
+                  {task.description}
+                </div>
+              )}
             </div>
 
             {/* Actions */}
@@ -266,6 +274,7 @@ function TreeView({ projectId }) {
         project_id: parseInt(projectId),
         parent_task_id: null,
         title: taskData.title,
+        description: taskData.description,
         status: 'backlog',
         tags: taskData.tags,
         estimated_minutes: taskData.estimated_minutes,

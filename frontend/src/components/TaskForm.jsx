@@ -14,6 +14,7 @@ const FLAG_COLORS = [
 
 function TaskForm({ onSubmit, onCancel, submitLabel = "Add" }) {
   const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
   const [tags, setTags] = useState('')
   const [hours, setHours] = useState('')
   const [minutes, setMinutes] = useState('')
@@ -33,6 +34,7 @@ function TaskForm({ onSubmit, onCancel, submitLabel = "Add" }) {
 
     const taskData = {
       title: title.trim(),
+      description: description.trim() || null,
       tags: tagList && tagList.length > 0 ? tagList : null,
       estimated_minutes: totalMinutes > 0 ? totalMinutes : null,
       flag_color: flagColor
@@ -53,6 +55,18 @@ function TaskForm({ onSubmit, onCancel, submitLabel = "Add" }) {
           placeholder="Enter task title..."
           className="w-full px-3 py-2 bg-cyber-darker border border-cyber-orange/50 rounded text-gray-100 text-sm focus:outline-none focus:border-cyber-orange"
           autoFocus
+        />
+      </div>
+
+      {/* Description */}
+      <div>
+        <label className="block text-xs text-gray-400 mb-1">Description</label>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Optional task description..."
+          rows="3"
+          className="w-full px-3 py-2 bg-cyber-darker border border-cyber-orange/50 rounded text-gray-100 text-sm focus:outline-none focus:border-cyber-orange resize-y"
         />
       </div>
 

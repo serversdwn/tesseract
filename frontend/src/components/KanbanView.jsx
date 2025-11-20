@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Check, X, Flag, Clock, ChevronDown, ChevronRight } from 'lucide-react'
+import { Plus, Check, X, Flag, Clock, ChevronDown, ChevronRight, ChevronsDown, ChevronsUp } from 'lucide-react'
 import {
   getProjectTasks,
   createTask,
@@ -27,6 +27,18 @@ const FLAG_COLORS = {
   pink: 'bg-pink-500'
 }
 
+// Helper function to get all descendant tasks recursively
+function getAllDescendants(taskId, allTasks) {
+  const children = allTasks.filter(t => t.parent_task_id === taskId)
+  let descendants = [...children]
+
+  for (const child of children) {
+    descendants = descendants.concat(getAllDescendants(child.id, allTasks))
+  }
+
+  return descendants
+}
+
 // Helper function to get all descendant tasks of a parent in a specific status
 function getDescendantsInStatus(taskId, allTasks, status) {
   const children = allTasks.filter(t => t.parent_task_id === taskId)
@@ -48,10 +60,18 @@ function hasDescendantsInStatus(taskId, allTasks, status) {
   return getDescendantsInStatus(taskId, allTasks, status).length > 0
 }
 
-function TaskCard({ task, allTasks, onUpdate, onDragStart, isParent, columnStatus }) {
+function TaskCard({ task, allTasks, onUpdate, onDragStart, isParent, columnStatus, expandedCards, setExpandedCards }) {
   const [isEditing, setIsEditing] = useState(false)
-  const [isExpanded, setIsExpanded] = useState(false)
   const [editTitle, setEditTitle] = useState(task.title)
+
+  // Use global expanded state
+  const isExpanded = expandedCards[task.id] || false
+  const toggleExpanded = () => {
+    setExpandedCards(prev => ({
+      ...prev,
+      [task.id]: !prev[task.id]
+    }))
+  }
 
   const handleSave = async () => {
     try {
@@ -80,13 +100,13 @@ function TaskCard({ task, allTasks, onUpdate, onDragStart, isParent, columnStatu
   return (
     <div className="mb-2">
       <div
-        draggable={!isEditing && !isParent}
-        onDragStart={(e) => !isParent && onDragStart(e, task)}
+        draggable={!isEditing}
+        onDragStart={(e) => onDragStart(e, task, isParent)}
         className={`${
           isParent
             ? 'bg-cyber-darker border-2 border-cyber-orange/50'
             : 'bg-cyber-darkest border border-cyber-orange/30'
-        } rounded-lg p-3 ${!isParent ? 'cursor-move' : ''} hover:border-cyber-orange/60 transition-all group`}
+        } rounded-lg p-3 cursor-move hover:border-cyber-orange/60 transition-all group`}
       >
         {isEditing ? (
           <div className="flex gap-2">
@@ -121,7 +141,7 @@ function TaskCard({ task, allTasks, onUpdate, onDragStart, isParent, columnStatu
                   {/* Expand/collapse for parent cards */}
                   {isParent && childrenInColumn.length > 0 && (
                     <button
-                      onClick={() => setIsExpanded(!isExpanded)}
+                      onClick={toggleExpanded}
                       className="text-cyber-orange hover:text-cyber-orange-bright"
                     >
                       {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -172,6 +192,13 @@ function TaskCard({ task, allTasks, onUpdate, onDragStart, isParent, columnStatu
                         )}
                       </div>
                     )}
+
+                    {/* Description */}
+                    {task.description && (
+                      <div className="mt-2 text-xs text-gray-400 italic">
+                        {task.description}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -201,6 +228,8 @@ function TaskCard({ task, allTasks, onUpdate, onDragStart, isParent, columnStatu
               onDragStart={onDragStart}
               isParent={false}
               columnStatus={columnStatus}
+              expandedCards={expandedCards}
+              setExpandedCards={setExpandedCards}
             />
           ))}
         </div>
@@ -209,7 +238,7 @@ function TaskCard({ task, allTasks, onUpdate, onDragStart, isParent, columnStatu
   )
 }
 
-function KanbanColumn({ status, allTasks, projectId, onUpdate, onDrop, onDragOver }) {
+function KanbanColumn({ status, allTasks, projectId, onUpdate, onDrop, onDragOver, expandedCards, setExpandedCards }) {
   const [showAddTask, setShowAddTask] = useState(false)
 
   const handleAddTask = async (taskData) => {
@@ -218,6 +247,7 @@ function KanbanColumn({ status, allTasks, projectId, onUpdate, onDrop, onDragOve
         project_id: parseInt(projectId),
         parent_task_id: null,
         title: taskData.title,
+        description: taskData.description,
         status: status.key,
         tags: taskData.tags,
         estimated_minutes: taskData.estimated_minutes,
@@ -289,11 +319,14 @@ function KanbanColumn({ status, allTasks, projectId, onUpdate, onDrop, onDragOve
               task={task}
               allTasks={allTasks}
               onUpdate={onUpdate}
-              onDragStart={(e, task) => {
+              onDragStart={(e, task, isParent) => {
                 e.dataTransfer.setData('taskId', task.id.toString())
+                e.dataTransfer.setData('isParent', isParent.toString())
               }}
               isParent={isParent}
               columnStatus={status.key}
+              expandedCards={expandedCards}
+              setExpandedCards={setExpandedCards}
             />
           )
         })}
@@ -306,6 +339,7 @@ function KanbanView({ projectId }) {
   const [allTasks, setAllTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [expandedCards, setExpandedCards] = useState({})
 
   useEffect(() => {
     loadTasks()
@@ -323,6 +357,19 @@ function KanbanView({ projectId }) {
     }
   }
 
+  const handleExpandAll = () => {
+    const parentTasks = allTasks.filter(t => allTasks.some(child => child.parent_task_id === t.id))
+    const newExpandedState = {}
+    parentTasks.forEach(task => {
+      newExpandedState[task.id] = true
+    })
+    setExpandedCards(newExpandedState)
+  }
+
+  const handleCollapseAll = () => {
+    setExpandedCards({})
+  }
+
   const handleDragOver = (e) => {
     e.preventDefault()
   }
@@ -330,11 +377,22 @@ function KanbanView({ projectId }) {
   const handleDrop = async (e, newStatus) => {
     e.preventDefault()
     const taskId = parseInt(e.dataTransfer.getData('taskId'))
+    const isParent = e.dataTransfer.getData('isParent') === 'true'
 
     if (!taskId) return
 
     try {
+      // Update the dragged task
       await updateTask(taskId, { status: newStatus })
+
+      // If it's a parent task, update all descendants
+      if (isParent) {
+        const descendants = getAllDescendants(taskId, allTasks)
+        for (const descendant of descendants) {
+          await updateTask(descendant.id, { status: newStatus })
+        }
+      }
+
       loadTasks()
     } catch (err) {
       alert(`Error: ${err.message}`)
@@ -351,7 +409,25 @@ function KanbanView({ projectId }) {
 
   return (
     <div>
-      <h3 className="text-xl font-semibold text-gray-300 mb-4">Kanban Board (Nested View)</h3>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-xl font-semibold text-gray-300">Kanban Board (Nested View)</h3>
+        <div className="flex gap-2">
+          <button
+            onClick={handleExpandAll}
+            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-cyber-darker border border-cyber-orange/30 text-gray-300 rounded hover:border-cyber-orange/60 hover:bg-cyber-dark transition-colors"
+          >
+            <ChevronsDown size={16} />
+            Expand All
+          </button>
+          <button
+            onClick={handleCollapseAll}
+            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-cyber-darker border border-cyber-orange/30 text-gray-300 rounded hover:border-cyber-orange/60 hover:bg-cyber-dark transition-colors"
+          >
+            <ChevronsUp size={16} />
+            Collapse All
+          </button>
+        </div>
+      </div>
 
       <div className="flex gap-4 overflow-x-auto pb-4">
         {STATUSES.map(status => (
@@ -363,6 +439,8 @@ function KanbanView({ projectId }) {
             onUpdate={loadTasks}
             onDrop={handleDrop}
             onDragOver={handleDragOver}
+            expandedCards={expandedCards}
+            setExpandedCards={setExpandedCards}
           />
         ))}
       </div>
