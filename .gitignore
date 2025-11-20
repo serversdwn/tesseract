@@ -3,4 +3,5 @@ __pycache__/
 node_modules/
 frontend/dist/
 .env
-backend/data.db
+backend/data/*
+!backend/data/.gitkeep

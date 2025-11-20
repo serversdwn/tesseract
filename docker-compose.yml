@@ -6,7 +6,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./backend/data.db:/app/data.db
+      - ./backend/data:/app/backend/data
     environment:
       - PYTHONUNBUFFERED=1
   frontend:
