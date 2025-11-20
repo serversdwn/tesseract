@@ -29,12 +29,12 @@ The frontend expects `VITE_API_BASE` to point to the backend (default `http://lo
 ## Running with Docker
 
 ```bash
-# ensure a host directory exists for the SQLite file
-mkdir -p backend/data
 docker-compose up --build
 ```
 - Backend: http://localhost:8000 (Swagger docs at `/docs`)
 - Frontend: http://localhost:5173
+
+Docker Compose uses a named volume (`backend-data`) to persist the SQLite file, so you don’t need to create any host directories ahead of time.
 
 ## API Reference
 - `GET /api/projects` — list projects.
