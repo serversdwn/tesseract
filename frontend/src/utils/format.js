@@ -23,13 +23,14 @@ export function formatTags(tags) {
 }
 
 // Calculate sum of all LEAF descendant estimates (hierarchical structure)
+// Excludes tasks marked as "done"
 export function calculateLeafTime(task) {
-  // If no subtasks, this is a leaf - return its own estimate
+  // If no subtasks, this is a leaf - return its own estimate if not done
   if (!task.subtasks || task.subtasks.length === 0) {
-    return task.estimated_minutes || 0;
+    return (task.status !== 'done' && task.estimated_minutes) ? task.estimated_minutes : 0;
   }
 
-  // Has subtasks, so sum up all leaf descendants
+  // Has subtasks, so sum up all leaf descendants (excluding done tasks)
   let total = 0;
   for (const subtask of task.subtasks) {
     total += calculateLeafTime(subtask);
@@ -39,16 +40,17 @@ export function calculateLeafTime(task) {
 }
 
 // Calculate sum of all LEAF descendant estimates (flat task list)
+// Excludes tasks marked as "done"
 export function calculateLeafTimeFlat(task, allTasks) {
   // Find direct children
   const children = allTasks.filter(t => t.parent_task_id === task.id);
 
-  // If no children, this is a leaf - return its own estimate
+  // If no children, this is a leaf - return its own estimate if not done
   if (children.length === 0) {
-    return task.estimated_minutes || 0;
+    return (task.status !== 'done' && task.estimated_minutes) ? task.estimated_minutes : 0;
   }
 
-  // Has children, so sum up all leaf descendants
+  // Has children, so sum up all leaf descendants (excluding done tasks)
   let total = 0;
   for (const child of children) {
     total += calculateLeafTimeFlat(child, allTasks);
