@@ -144,6 +144,47 @@ def delete_task(task_id: int, db: Session = Depends(get_db)):
     return None
 
 
+# ========== SEARCH ENDPOINT ==========
+
+@app.get("/api/search", response_model=List[schemas.Task])
+def search_tasks(
+    query: str,
+    project_ids: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Search tasks across projects by title, description, and tags.
+
+    Args:
+        query: Search term to match against title, description, and tags
+        project_ids: Comma-separated list of project IDs to search in (optional, searches all if not provided)
+    """
+    # Parse project IDs if provided
+    project_id_list = None
+    if project_ids:
+        try:
+            project_id_list = [int(pid.strip()) for pid in project_ids.split(',') if pid.strip()]
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid project_ids format")
+
+    # Build query
+    tasks_query = db.query(models.Task)
+
+    # Filter by project IDs if specified
+    if project_id_list:
+        tasks_query = tasks_query.filter(models.Task.project_id.in_(project_id_list))
+
+    # Search in title, description, and tags
+    search_term = f"%{query}%"
+    tasks = tasks_query.filter(
+        (models.Task.title.ilike(search_term)) |
+        (models.Task.description.ilike(search_term)) |
+        (models.Task.tags.contains([query]))  # Exact tag match
+    ).all()
+
+    return tasks
+
+
 # ========== JSON IMPORT ENDPOINT ==========
 
 def _import_tasks_recursive(
@@ -161,6 +202,9 @@ def _import_tasks_recursive(
             title=task_data.title,
             description=task_data.description,
             status=task_data.status,
+            estimated_minutes=task_data.estimated_minutes,
+            tags=task_data.tags,
+            flag_color=task_data.flag_color,
             sort_order=idx
         )
         db_task = crud.create_task(db, task)

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, Check, X, ChevronDown, ChevronRight } from 'lucide-react'
+import { Plus, Edit2, Trash2, Check, X } from 'lucide-react'
 import {
   getProjectTasks,
   createTask,
@@ -17,10 +17,11 @@ const STATUSES = [
 function TaskCard({ task, allTasks, onUpdate, onDragStart }) {
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(task.title)
-  const [showSubtasks, setShowSubtasks] = useState(false)
 
-  const subtasks = allTasks.filter(t => t.parent_task_id === task.id)
-  const hasSubtasks = subtasks.length > 0
+  // Find parent task if this is a subtask
+  const parentTask = task.parent_task_id
+    ? allTasks.find(t => t.id === task.parent_task_id)
+    : null
 
   const handleSave = async () => {
     try {
@@ -75,8 +76,15 @@ function TaskCard({ task, allTasks, onUpdate, onDragStart }) {
         </div>
       ) : (
         <>
-          <div className="flex justify-between items-start mb-2">
-            <span className="text-gray-200 text-sm flex-1">{task.title}</span>
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              <div className="text-gray-200 text-sm">{task.title}</div>
+              {parentTask && (
+                <div className="text-xs text-gray-500 mt-1">
+                  ↳ subtask of: <span className="text-cyber-orange">{parentTask.title}</span>
+                </div>
+              )}
+            </div>
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
                 onClick={() => setIsEditing(true)}
@@ -92,27 +100,6 @@ function TaskCard({ task, allTasks, onUpdate, onDragStart }) {
               </button>
             </div>
           </div>
-
-          {hasSubtasks && (
-            <div className="mt-2 pt-2 border-t border-cyber-orange/20">
-              <button
-                onClick={() => setShowSubtasks(!showSubtasks)}
-                className="flex items-center gap-1 text-xs text-cyber-orange hover:text-cyber-orange-bright"
-              >
-                {showSubtasks ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                {subtasks.length} subtask{subtasks.length !== 1 ? 's' : ''}
-              </button>
-              {showSubtasks && (
-                <div className="mt-2 pl-3 space-y-1">
-                  {subtasks.map(subtask => (
-                    <div key={subtask.id} className="text-xs text-gray-400">
-                      • {subtask.title}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </>
       )}
     </div>
@@ -255,9 +242,6 @@ function KanbanView({ projectId }) {
     return <div className="text-center text-red-400 py-12">{error}</div>
   }
 
-  // Only show root-level tasks in Kanban (tasks without parents)
-  const rootTasks = allTasks.filter(t => !t.parent_task_id)
-
   return (
     <div>
       <h3 className="text-xl font-semibold text-gray-300 mb-4">Kanban Board</h3>
@@ -267,7 +251,7 @@ function KanbanView({ projectId }) {
           <KanbanColumn
             key={status.key}
             status={status}
-            tasks={rootTasks.filter(t => t.status === status.key)}
+            tasks={allTasks.filter(t => t.status === status.key)}
             allTasks={allTasks}
             projectId={projectId}
             onUpdate={loadTasks}
@@ -277,7 +261,7 @@ function KanbanView({ projectId }) {
         ))}
       </div>
 
-      {rootTasks.length === 0 && (
+      {allTasks.length === 0 && (
         <div className="text-center py-16 text-gray-500">
           <p className="text-lg mb-2">No tasks yet</p>
           <p className="text-sm">Add tasks using the + button in any column</p>
