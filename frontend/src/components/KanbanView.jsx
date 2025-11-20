@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Check, X, Flag, Clock } from 'lucide-react'
+import { Plus, Check, X, Flag, Clock, ChevronDown, ChevronRight } from 'lucide-react'
 import {
   getProjectTasks,
   createTask,
@@ -27,14 +27,31 @@ const FLAG_COLORS = {
   pink: 'bg-pink-500'
 }
 
-function TaskCard({ task, allTasks, onUpdate, onDragStart }) {
-  const [isEditing, setIsEditing] = useState(false)
-  const [editTitle, setEditTitle] = useState(task.title)
+// Helper function to get all descendant tasks of a parent in a specific status
+function getDescendantsInStatus(taskId, allTasks, status) {
+  const children = allTasks.filter(t => t.parent_task_id === taskId)
+  let descendants = []
 
-  // Find parent task if this is a subtask
-  const parentTask = task.parent_task_id
-    ? allTasks.find(t => t.id === task.parent_task_id)
-    : null
+  for (const child of children) {
+    if (child.status === status) {
+      descendants.push(child)
+    }
+    // Recursively get descendants
+    descendants = descendants.concat(getDescendantsInStatus(child.id, allTasks, status))
+  }
+
+  return descendants
+}
+
+// Helper function to check if a task has any descendants in a status
+function hasDescendantsInStatus(taskId, allTasks, status) {
+  return getDescendantsInStatus(taskId, allTasks, status).length > 0
+}
+
+function TaskCard({ task, allTasks, onUpdate, onDragStart, isParent, columnStatus }) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [editTitle, setEditTitle] = useState(task.title)
 
   const handleSave = async () => {
     try {
@@ -56,100 +73,143 @@ function TaskCard({ task, allTasks, onUpdate, onDragStart }) {
     }
   }
 
+  // For parent cards, get children in this column's status
+  const childrenInColumn = isParent ? getDescendantsInStatus(task.id, allTasks, columnStatus) : []
+  const totalChildren = isParent ? allTasks.filter(t => t.parent_task_id === task.id).length : 0
+
   return (
-    <div
-      draggable={!isEditing}
-      onDragStart={(e) => onDragStart(e, task)}
-      className="bg-cyber-darkest border border-cyber-orange/30 rounded-lg p-3 mb-2 cursor-move hover:border-cyber-orange/60 transition-all group"
-    >
-      {isEditing ? (
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
-            className="flex-1 px-2 py-1 bg-cyber-darker border border-cyber-orange/50 rounded text-gray-100 text-sm focus:outline-none focus:border-cyber-orange"
-            autoFocus
-          />
-          <button
-            onClick={handleSave}
-            className="text-green-400 hover:text-green-300"
-          >
-            <Check size={16} />
-          </button>
-          <button
-            onClick={() => {
-              setIsEditing(false)
-              setEditTitle(task.title)
-            }}
-            className="text-gray-400 hover:text-gray-300"
-          >
-            <X size={16} />
-          </button>
-        </div>
-      ) : (
-        <>
-          <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 text-sm">
-                {/* Flag indicator */}
-                {task.flag_color && FLAG_COLORS[task.flag_color] && (
-                  <Flag size={12} className={`${FLAG_COLORS[task.flag_color].replace('bg-', 'text-')}`} fill="currentColor" />
-                )}
-                <span className="text-gray-200">{task.title}</span>
+    <div className="mb-2">
+      <div
+        draggable={!isEditing && !isParent}
+        onDragStart={(e) => !isParent && onDragStart(e, task)}
+        className={`${
+          isParent
+            ? 'bg-cyber-darker border-2 border-cyber-orange/50'
+            : 'bg-cyber-darkest border border-cyber-orange/30'
+        } rounded-lg p-3 ${!isParent ? 'cursor-move' : ''} hover:border-cyber-orange/60 transition-all group`}
+      >
+        {isEditing ? (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              className="flex-1 px-2 py-1 bg-cyber-darker border border-cyber-orange/50 rounded text-gray-100 text-sm focus:outline-none focus:border-cyber-orange"
+              autoFocus
+            />
+            <button
+              onClick={handleSave}
+              className="text-green-400 hover:text-green-300"
+            >
+              <Check size={16} />
+            </button>
+            <button
+              onClick={() => {
+                setIsEditing(false)
+                setEditTitle(task.title)
+              }}
+              className="text-gray-400 hover:text-gray-300"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  {/* Expand/collapse for parent cards */}
+                  {isParent && childrenInColumn.length > 0 && (
+                    <button
+                      onClick={() => setIsExpanded(!isExpanded)}
+                      className="text-cyber-orange hover:text-cyber-orange-bright"
+                    >
+                      {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    </button>
+                  )}
+
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 text-sm">
+                      {/* Flag indicator */}
+                      {task.flag_color && FLAG_COLORS[task.flag_color] && (
+                        <Flag size={12} className={`${FLAG_COLORS[task.flag_color].replace('bg-', 'text-')}`} fill="currentColor" />
+                      )}
+                      <span className={`${isParent ? 'font-semibold text-cyber-orange' : 'text-gray-200'}`}>
+                        {task.title}
+                      </span>
+                    </div>
+
+                    {/* Parent card info: show subtask count in this column */}
+                    {isParent && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        {childrenInColumn.length} of {totalChildren} subtask{totalChildren !== 1 ? 's' : ''} in this column
+                      </div>
+                    )}
+
+                    {/* Metadata row */}
+                    {(formatTimeWithTotal(task, allTasks) || (task.tags && task.tags.length > 0)) && (
+                      <div className="flex items-center gap-2 mt-2">
+                        {/* Time estimate */}
+                        {formatTimeWithTotal(task, allTasks) && (
+                          <div className={`flex items-center gap-1 text-xs text-gray-500 ${task.status === 'done' ? 'line-through' : ''}`}>
+                            <Clock size={11} />
+                            <span>{formatTimeWithTotal(task, allTasks)}</span>
+                          </div>
+                        )}
+
+                        {/* Tags */}
+                        {task.tags && task.tags.length > 0 && (
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {task.tags.map((tag, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center px-1.5 py-0.5 text-xs bg-cyber-orange/20 text-cyber-orange border border-cyber-orange/30 rounded"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              {/* Parent task context */}
-              {parentTask && (
-                <div className="text-xs text-gray-500 mt-1">
-                  ↳ subtask of: <span className="text-cyber-orange">{parentTask.title}</span>
-                </div>
-              )}
-
-              {/* Metadata row */}
-              {(formatTimeWithTotal(task, allTasks) || (task.tags && task.tags.length > 0)) && (
-                <div className="flex items-center gap-2 mt-2">
-                  {/* Time estimate */}
-                  {formatTimeWithTotal(task, allTasks) && (
-                    <div className={`flex items-center gap-1 text-xs text-gray-500 ${task.status === 'done' ? 'line-through' : ''}`}>
-                      <Clock size={11} />
-                      <span>{formatTimeWithTotal(task, allTasks)}</span>
-                    </div>
-                  )}
-
-                  {/* Tags */}
-                  {task.tags && task.tags.length > 0 && (
-                    <div className="flex items-center gap-1 flex-wrap">
-                      {task.tags.map((tag, idx) => (
-                        <span
-                          key={idx}
-                          className="inline-flex items-center px-1.5 py-0.5 text-xs bg-cyber-orange/20 text-cyber-orange border border-cyber-orange/30 rounded"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <TaskMenu
+                  task={task}
+                  onUpdate={onUpdate}
+                  onDelete={handleDelete}
+                  onEdit={() => setIsEditing(true)}
+                />
+              </div>
             </div>
+          </>
+        )}
+      </div>
 
-            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <TaskMenu
-                task={task}
-                onUpdate={onUpdate}
-                onDelete={handleDelete}
-                onEdit={() => setIsEditing(true)}
-              />
-            </div>
-          </div>
-        </>
+      {/* Expanded children */}
+      {isParent && isExpanded && childrenInColumn.length > 0 && (
+        <div className="ml-6 mt-2 space-y-2">
+          {childrenInColumn.map(child => (
+            <TaskCard
+              key={child.id}
+              task={child}
+              allTasks={allTasks}
+              onUpdate={onUpdate}
+              onDragStart={onDragStart}
+              isParent={false}
+              columnStatus={columnStatus}
+            />
+          ))}
+        </div>
       )}
     </div>
   )
 }
 
-function KanbanColumn({ status, tasks, allTasks, projectId, onUpdate, onDrop, onDragOver }) {
+function KanbanColumn({ status, allTasks, projectId, onUpdate, onDrop, onDragOver }) {
   const [showAddTask, setShowAddTask] = useState(false)
 
   const handleAddTask = async (taskData) => {
@@ -170,16 +230,37 @@ function KanbanColumn({ status, tasks, allTasks, projectId, onUpdate, onDrop, on
     }
   }
 
+  // Get tasks to display in this column:
+  // 1. All leaf tasks (no children) with this status
+  // 2. All parent tasks that have at least one descendant with this status
+  const leafTasks = allTasks.filter(t => {
+    const hasChildren = allTasks.some(child => child.parent_task_id === t.id)
+    return !hasChildren && t.status === status.key
+  })
+
+  const parentTasks = allTasks.filter(t => {
+    const hasChildren = allTasks.some(child => child.parent_task_id === t.id)
+    return hasChildren && hasDescendantsInStatus(t.id, allTasks, status.key)
+  })
+
+  // Only show root-level parents (not nested parents)
+  const rootParents = parentTasks.filter(t => !t.parent_task_id)
+
+  // Only show root-level leaf tasks (leaf tasks without parents)
+  const rootLeafTasks = leafTasks.filter(t => !t.parent_task_id)
+
+  const displayTasks = [...rootParents, ...rootLeafTasks]
+
   return (
     <div
-      className="flex-1 min-w-[280px] bg-cyber-darker rounded-lg p-4 border-t-4 ${status.color}"
+      className={`flex-1 min-w-[280px] bg-cyber-darker rounded-lg p-4 border-t-4 ${status.color}`}
       onDrop={(e) => onDrop(e, status.key)}
       onDragOver={onDragOver}
     >
       <div className="flex justify-between items-center mb-4">
         <h3 className="font-semibold text-gray-200">
           {status.label}
-          <span className="ml-2 text-xs text-gray-500">({tasks.length})</span>
+          <span className="ml-2 text-xs text-gray-500">({displayTasks.length})</span>
         </h3>
         <button
           onClick={() => setShowAddTask(true)}
@@ -200,17 +281,22 @@ function KanbanColumn({ status, tasks, allTasks, projectId, onUpdate, onDrop, on
       )}
 
       <div className="space-y-2">
-        {tasks.map(task => (
-          <TaskCard
-            key={task.id}
-            task={task}
-            allTasks={allTasks}
-            onUpdate={onUpdate}
-            onDragStart={(e, task) => {
-              e.dataTransfer.setData('taskId', task.id.toString())
-            }}
-          />
-        ))}
+        {displayTasks.map(task => {
+          const isParent = allTasks.some(t => t.parent_task_id === task.id)
+          return (
+            <TaskCard
+              key={task.id}
+              task={task}
+              allTasks={allTasks}
+              onUpdate={onUpdate}
+              onDragStart={(e, task) => {
+                e.dataTransfer.setData('taskId', task.id.toString())
+              }}
+              isParent={isParent}
+              columnStatus={status.key}
+            />
+          )
+        })}
       </div>
     </div>
   )
@@ -265,14 +351,13 @@ function KanbanView({ projectId }) {
 
   return (
     <div>
-      <h3 className="text-xl font-semibold text-gray-300 mb-4">Kanban Board</h3>
+      <h3 className="text-xl font-semibold text-gray-300 mb-4">Kanban Board (Nested View)</h3>
 
       <div className="flex gap-4 overflow-x-auto pb-4">
         {STATUSES.map(status => (
           <KanbanColumn
             key={status.key}
             status={status}
-            tasks={allTasks.filter(t => t.status === status.key)}
             allTasks={allTasks}
             projectId={projectId}
             onUpdate={loadTasks}

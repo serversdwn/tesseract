@@ -2,7 +2,7 @@
 
 **Task Decomposition Engine** - A self-hosted web application for managing deeply nested todo trees with advanced time tracking and project planning capabilities.
 
-![Version](https://img.shields.io/badge/version-0.1.4-orange)
+![Version](https://img.shields.io/badge/version-0.1.5-orange)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 ## Overview
@@ -12,7 +12,9 @@ TESSERACT is designed for complex project management where tasks naturally decom
 ### Key Features
 
 - **Arbitrary-Depth Nesting**: Create tasks within tasks within tasks - no limits on hierarchy depth
-- **Dual View Modes**: Toggle between Tree View (hierarchical) and Kanban Board (status-based)
+- **Dual View Modes**:
+  - **Tree View**: Hierarchical collapsible tree with full nesting
+  - **Nested Kanban**: Status-based board where parent tasks appear in multiple columns
 - **Intelligent Time Tracking**:
   - Leaf-based time calculation (parent times = sum of descendant leaf tasks)
   - Automatic exclusion of completed tasks from time estimates
@@ -101,13 +103,29 @@ docker-compose down -v
 
 **Expand/Collapse**: Click chevron icon to show/hide subtasks
 
-#### Kanban View
+#### Kanban View (Nested)
 
-**Add Task**: Click "+" in any column to create a task with that status
+The Kanban board displays tasks in a nested hierarchy while maintaining status-based columns:
 
-**Move Tasks**: Drag and drop cards between columns to change status
+**Parent Cards**:
+- Appear in **every column** where they have subtasks
+- Display "X of Y subtasks in this column" counter
+- Have distinct styling (thick orange border, bold title)
+- Click chevron to expand/collapse and see children in that column
+- Cannot be dragged (only leaf tasks are draggable)
 
-**Edit Tasks**: Use the three-dot menu same as Tree View
+**Leaf Tasks**:
+- Appear only in their status column
+- Fully draggable between columns
+- Standard card styling
+
+**Add Task**: Click "+" in any column to create a root-level task
+
+**Move Tasks**: Drag and drop leaf task cards between columns
+
+**Edit Tasks**: Use the three-dot menu on any card (parent or leaf)
+
+**Example**: A project with backend (2 tasks in backlog, 1 in progress) and frontend (1 in done) will show the project card in all three columns with appropriate counts.
 
 ### Understanding Time Estimates
 
@@ -354,7 +372,6 @@ Ensure JSON structure matches schema. Common issues:
 See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ### v0.2.0 (Planned)
-- Nested Kanban view (parent cards split across columns)
 - Task dependencies and blocking relationships
 - Due dates and calendar view
 - Progress tracking (% complete)

@@ -5,6 +5,31 @@ All notable changes to TESSERACT will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] - 2025-01-XX
+
+### Added
+- **Nested Kanban View** - Major feature implementation
+  - Parent tasks now appear in each column where they have subtasks
+  - Parent cards show "X of Y subtasks in this column" indicator
+  - Parent cards are expandable/collapsible to show children in that column
+  - Parent cards have distinct visual styling (thicker orange border, bold text)
+  - Only leaf tasks (tasks with no children) are draggable
+  - Parent cards automatically appear in multiple columns as children move
+- Helper functions for nested Kanban logic:
+  - `getDescendantsInStatus()` - Get all descendant tasks in a specific status
+  - `hasDescendantsInStatus()` - Check if parent has any descendants in a status
+
+### Changed
+- Kanban board now labeled "Kanban Board (Nested View)"
+- Parent task cards cannot be dragged (only leaf tasks)
+- Column task counts now include parent cards
+- Improved visual hierarchy with parent/child distinction
+
+### Improved
+- Better visualization of task distribution across statuses
+- Easier to see project structure while maintaining status-based organization
+- Parent tasks provide context for subtasks in each column
+
 ## [0.1.4] - 2025-01-XX
 
 ### Added
