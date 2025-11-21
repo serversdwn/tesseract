@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { MoreVertical, Clock, Tag, Flag, Edit2, Trash2, X, Check, ListTodo } from 'lucide-react'
+import { MoreVertical, Clock, Tag, Flag, Edit2, Trash2, X, Check, ListTodo, FileText } from 'lucide-react'
 import { updateTask } from '../utils/api'
 
 const FLAG_COLORS = [
@@ -22,6 +22,7 @@ const STATUSES = [
 function TaskMenu({ task, onUpdate, onDelete, onEdit }) {
   const [isOpen, setIsOpen] = useState(false)
   const [showTimeEdit, setShowTimeEdit] = useState(false)
+  const [showDescriptionEdit, setShowDescriptionEdit] = useState(false)
   const [showTagsEdit, setShowTagsEdit] = useState(false)
   const [showFlagEdit, setShowFlagEdit] = useState(false)
   const [showStatusEdit, setShowStatusEdit] = useState(false)
@@ -32,6 +33,7 @@ function TaskMenu({ task, onUpdate, onDelete, onEdit }) {
 
   const [editHours, setEditHours] = useState(initialHours)
   const [editMinutes, setEditMinutes] = useState(initialMinutes)
+  const [editDescription, setEditDescription] = useState(task.description || '')
   const [editTags, setEditTags] = useState(task.tags ? task.tags.join(', ') : '')
   const menuRef = useRef(null)
 
@@ -40,6 +42,7 @@ function TaskMenu({ task, onUpdate, onDelete, onEdit }) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setIsOpen(false)
         setShowTimeEdit(false)
+        setShowDescriptionEdit(false)
         setShowTagsEdit(false)
         setShowFlagEdit(false)
         setShowStatusEdit(false)
@@ -58,6 +61,18 @@ function TaskMenu({ task, onUpdate, onDelete, onEdit }) {
       const minutes = totalMinutes > 0 ? totalMinutes : null
       await updateTask(task.id, { estimated_minutes: minutes })
       setShowTimeEdit(false)
+      setIsOpen(false)
+      onUpdate()
+    } catch (err) {
+      alert(`Error: ${err.message}`)
+    }
+  }
+
+  const handleUpdateDescription = async () => {
+    try {
+      const description = editDescription.trim() || null
+      await updateTask(task.id, { description })
+      setShowDescriptionEdit(false)
       setIsOpen(false)
       onUpdate()
     } catch (err) {
@@ -181,6 +196,52 @@ function TaskMenu({ task, onUpdate, onDelete, onEdit }) {
             >
               <Clock size={14} />
               <span>Set Time Estimate</span>
+            </button>
+          )}
+
+          {/* Description Edit */}
+          {showDescriptionEdit ? (
+            <div className="p-3 border-b border-cyber-orange/20">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText size={14} className="text-cyber-orange" />
+                <span className="text-sm text-gray-300">Description</span>
+              </div>
+              <div className="space-y-2">
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="Task description..."
+                  rows="4"
+                  className="w-full px-2 py-1 bg-cyber-darker border border-cyber-orange/50 rounded text-gray-100 text-sm focus:outline-none focus:border-cyber-orange resize-y"
+                  autoFocus
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleUpdateDescription}
+                    className="flex-1 px-2 py-1 text-sm bg-cyber-orange/20 text-cyber-orange rounded hover:bg-cyber-orange/30"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setShowDescriptionEdit(false)}
+                    className="px-2 py-1 text-sm text-gray-400 hover:text-gray-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowDescriptionEdit(true)
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-cyber-darker text-gray-300 text-sm"
+            >
+              <FileText size={14} />
+              <span>Edit Description</span>
             </button>
           )}
 
