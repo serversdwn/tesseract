@@ -1,0 +1,24 @@
+{
+  "project": {
+    "name": "New Project",
+    "description": "Describe the project here."
+  },
+  "tasks": [
+    {
+      "title": "Root Task Example",
+      "description": "Optional description.",
+      "status": "backlog",
+      "estimated_minutes": 60,
+      "tags": ["example"],
+      "flag_color": "orange",
+      "subtasks": [
+        {
+          "title": "Subtask Example",
+          "status": "backlog",
+          "estimated_minutes": 30,
+          "tags": []
+        }
+      ]
+    }
+  ]
+}
