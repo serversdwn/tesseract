@@ -12,14 +12,23 @@ const FLAG_COLORS = [
   { name: 'pink', color: 'bg-pink-500' }
 ]
 
-const STATUSES = [
-  { key: 'backlog', label: 'Backlog', color: 'text-gray-400' },
-  { key: 'in_progress', label: 'In Progress', color: 'text-blue-400' },
-  { key: 'blocked', label: 'Blocked', color: 'text-red-400' },
-  { key: 'done', label: 'Done', color: 'text-green-400' }
-]
+// Helper to format status label
+const formatStatusLabel = (status) => {
+  return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+}
 
-function TaskMenu({ task, onUpdate, onDelete, onEdit }) {
+// Helper to get status color
+const getStatusTextColor = (status) => {
+  const lowerStatus = status.toLowerCase()
+  if (lowerStatus === 'backlog') return 'text-gray-400'
+  if (lowerStatus === 'in_progress' || lowerStatus.includes('progress')) return 'text-blue-400'
+  if (lowerStatus === 'on_hold' || lowerStatus.includes('hold') || lowerStatus.includes('waiting')) return 'text-yellow-400'
+  if (lowerStatus === 'done' || lowerStatus.includes('complete')) return 'text-green-400'
+  if (lowerStatus.includes('blocked')) return 'text-red-400'
+  return 'text-purple-400' // default for custom statuses
+}
+
+function TaskMenu({ task, onUpdate, onDelete, onEdit, projectStatuses }) {
   const [isOpen, setIsOpen] = useState(false)
   const [showTimeEdit, setShowTimeEdit] = useState(false)
   const [showDescriptionEdit, setShowDescriptionEdit] = useState(false)
@@ -334,17 +343,17 @@ function TaskMenu({ task, onUpdate, onDelete, onEdit }) {
                 <span className="text-sm text-gray-300">Change Status</span>
               </div>
               <div className="space-y-1">
-                {STATUSES.map(({ key, label, color }) => (
+                {(projectStatuses || ['backlog', 'in_progress', 'on_hold', 'done']).map((status) => (
                   <button
-                    key={key}
-                    onClick={() => handleUpdateStatus(key)}
+                    key={status}
+                    onClick={() => handleUpdateStatus(status)}
                     className={`w-full text-left px-2 py-1.5 rounded text-sm ${
-                      task.status === key
+                      task.status === status
                         ? 'bg-cyber-orange/20 border border-cyber-orange/40'
                         : 'hover:bg-cyber-darker border border-transparent'
-                    } ${color} transition-all`}
+                    } ${getStatusTextColor(status)} transition-all`}
                   >
-                    {label} {task.status === key && '✓'}
+                    {formatStatusLabel(status)} {task.status === status && '✓'}
                   </button>
                 ))}
               </div>

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, LayoutList, LayoutGrid } from 'lucide-react'
+import { ArrowLeft, LayoutList, LayoutGrid, Settings } from 'lucide-react'
 import { getProject } from '../utils/api'
 import TreeView from '../components/TreeView'
 import KanbanView from '../components/KanbanView'
+import ProjectSettings from '../components/ProjectSettings'
 
 function ProjectView() {
   const { projectId } = useParams()
@@ -12,6 +13,7 @@ function ProjectView() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [view, setView] = useState('tree') // 'tree' or 'kanban'
+  const [showSettings, setShowSettings] = useState(false)
 
   useEffect(() => {
     loadProject()
@@ -65,37 +67,55 @@ function ProjectView() {
             )}
           </div>
 
-          <div className="flex gap-2 bg-cyber-darkest rounded-lg p-1 border border-cyber-orange/30">
+          <div className="flex gap-3 items-center">
+            <div className="flex gap-2 bg-cyber-darkest rounded-lg p-1 border border-cyber-orange/30">
+              <button
+                onClick={() => setView('tree')}
+                className={`flex items-center gap-2 px-4 py-2 rounded transition-colors ${
+                  view === 'tree'
+                    ? 'bg-cyber-orange text-cyber-darkest font-semibold'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                <LayoutList size={18} />
+                Tree View
+              </button>
+              <button
+                onClick={() => setView('kanban')}
+                className={`flex items-center gap-2 px-4 py-2 rounded transition-colors ${
+                  view === 'kanban'
+                    ? 'bg-cyber-orange text-cyber-darkest font-semibold'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                <LayoutGrid size={18} />
+                Kanban
+              </button>
+            </div>
+
             <button
-              onClick={() => setView('tree')}
-              className={`flex items-center gap-2 px-4 py-2 rounded transition-colors ${
-                view === 'tree'
-                  ? 'bg-cyber-orange text-cyber-darkest font-semibold'
-                  : 'text-gray-400 hover:text-gray-200'
-              }`}
+              onClick={() => setShowSettings(true)}
+              className="p-2 text-gray-400 hover:text-cyber-orange transition-colors border border-cyber-orange/30 rounded-lg hover:border-cyber-orange/60"
+              title="Project Settings"
             >
-              <LayoutList size={18} />
-              Tree View
-            </button>
-            <button
-              onClick={() => setView('kanban')}
-              className={`flex items-center gap-2 px-4 py-2 rounded transition-colors ${
-                view === 'kanban'
-                  ? 'bg-cyber-orange text-cyber-darkest font-semibold'
-                  : 'text-gray-400 hover:text-gray-200'
-              }`}
-            >
-              <LayoutGrid size={18} />
-              Kanban
+              <Settings size={20} />
             </button>
           </div>
         </div>
       </div>
 
       {view === 'tree' ? (
-        <TreeView projectId={projectId} />
+        <TreeView projectId={projectId} project={project} />
       ) : (
-        <KanbanView projectId={projectId} />
+        <KanbanView projectId={projectId} project={project} />
+      )}
+
+      {showSettings && (
+        <ProjectSettings
+          project={project}
+          onClose={() => setShowSettings(false)}
+          onUpdate={loadProject}
+        />
       )}
     </div>
   )

@@ -1,15 +1,11 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, JSON
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime
-import enum
 from .database import Base
 
 
-class TaskStatus(str, enum.Enum):
-    BACKLOG = "backlog"
-    IN_PROGRESS = "in_progress"
-    BLOCKED = "blocked"
-    DONE = "done"
+# Default statuses for new projects
+DEFAULT_STATUSES = ["backlog", "in_progress", "on_hold", "done"]
 
 
 class Project(Base):
@@ -18,6 +14,7 @@ class Project(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
+    statuses = Column(JSON, nullable=False, default=DEFAULT_STATUSES)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -32,7 +29,7 @@ class Task(Base):
     parent_task_id = Column(Integer, ForeignKey("tasks.id"), nullable=True)
     title = Column(String(500), nullable=False)
     description = Column(Text, nullable=True)
-    status = Column(Enum(TaskStatus), default=TaskStatus.BACKLOG, nullable=False)
+    status = Column(String(50), default="backlog", nullable=False)
     sort_order = Column(Integer, default=0)
     estimated_minutes = Column(Integer, nullable=True)
     tags = Column(JSON, nullable=True)

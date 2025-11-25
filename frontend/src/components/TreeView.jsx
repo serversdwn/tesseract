@@ -18,18 +18,20 @@ import { formatTimeWithTotal } from '../utils/format'
 import TaskMenu from './TaskMenu'
 import TaskForm from './TaskForm'
 
-const STATUS_COLORS = {
-  backlog: 'text-gray-400',
-  in_progress: 'text-blue-400',
-  blocked: 'text-red-400',
-  done: 'text-green-400'
+// Helper to format status label
+const formatStatusLabel = (status) => {
+  return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }
 
-const STATUS_LABELS = {
-  backlog: 'Backlog',
-  in_progress: 'In Progress',
-  blocked: 'Blocked',
-  done: 'Done'
+// Helper to get status color
+const getStatusColor = (status) => {
+  const lowerStatus = status.toLowerCase()
+  if (lowerStatus === 'backlog') return 'text-gray-400'
+  if (lowerStatus === 'in_progress' || lowerStatus.includes('progress')) return 'text-blue-400'
+  if (lowerStatus === 'on_hold' || lowerStatus.includes('hold') || lowerStatus.includes('waiting')) return 'text-yellow-400'
+  if (lowerStatus === 'done' || lowerStatus.includes('complete')) return 'text-green-400'
+  if (lowerStatus.includes('blocked')) return 'text-red-400'
+  return 'text-purple-400' // default for custom statuses
 }
 
 const FLAG_COLORS = {
@@ -42,7 +44,7 @@ const FLAG_COLORS = {
   pink: 'bg-pink-500'
 }
 
-function TaskNode({ task, projectId, onUpdate, level = 0 }) {
+function TaskNode({ task, projectId, onUpdate, level = 0, projectStatuses }) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(task.title)
@@ -81,7 +83,7 @@ function TaskNode({ task, projectId, onUpdate, level = 0 }) {
         parent_task_id: task.id,
         title: taskData.title,
         description: taskData.description,
-        status: 'backlog',
+        status: taskData.status,
         tags: taskData.tags,
         estimated_minutes: taskData.estimated_minutes,
         flag_color: taskData.flag_color
@@ -126,10 +128,9 @@ function TaskNode({ task, projectId, onUpdate, level = 0 }) {
               onChange={(e) => setEditStatus(e.target.value)}
               className="px-2 py-1 bg-cyber-darker border border-cyber-orange/50 rounded text-gray-100 text-sm focus:outline-none focus:border-cyber-orange"
             >
-              <option value="backlog">Backlog</option>
-              <option value="in_progress">In Progress</option>
-              <option value="blocked">Blocked</option>
-              <option value="done">Done</option>
+              {(projectStatuses || ['backlog', 'in_progress', 'on_hold', 'done']).map(status => (
+                <option key={status} value={status}>{formatStatusLabel(status)}</option>
+              ))}
             </select>
             <button
               onClick={handleSave}
@@ -157,8 +158,8 @@ function TaskNode({ task, projectId, onUpdate, level = 0 }) {
                   <Flag size={14} className={`${FLAG_COLORS[task.flag_color].replace('bg-', 'text-')}`} fill="currentColor" />
                 )}
                 <span className="text-gray-200">{task.title}</span>
-                <span className={`ml-2 text-xs ${STATUS_COLORS[task.status]}`}>
-                  {STATUS_LABELS[task.status]}
+                <span className={`ml-2 text-xs ${getStatusColor(task.status)}`}>
+                  {formatStatusLabel(task.status)}
                 </span>
               </div>
 
@@ -211,6 +212,7 @@ function TaskNode({ task, projectId, onUpdate, level = 0 }) {
                 onUpdate={onUpdate}
                 onDelete={handleDelete}
                 onEdit={() => setIsEditing(true)}
+                projectStatuses={projectStatuses}
               />
             </div>
           </>
@@ -224,6 +226,7 @@ function TaskNode({ task, projectId, onUpdate, level = 0 }) {
             onSubmit={handleAddSubtask}
             onCancel={() => setShowAddSubtask(false)}
             submitLabel="Add Subtask"
+            projectStatuses={projectStatuses}
           />
         </div>
       )}
@@ -238,6 +241,7 @@ function TaskNode({ task, projectId, onUpdate, level = 0 }) {
               projectId={projectId}
               onUpdate={onUpdate}
               level={level + 1}
+              projectStatuses={projectStatuses}
             />
           ))}
         </div>
@@ -246,7 +250,8 @@ function TaskNode({ task, projectId, onUpdate, level = 0 }) {
   )
 }
 
-function TreeView({ projectId }) {
+function TreeView({ projectId, project }) {
+  const projectStatuses = project?.statuses || ['backlog', 'in_progress', 'on_hold', 'done']
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -275,7 +280,7 @@ function TreeView({ projectId }) {
         parent_task_id: null,
         title: taskData.title,
         description: taskData.description,
-        status: 'backlog',
+        status: taskData.status,
         tags: taskData.tags,
         estimated_minutes: taskData.estimated_minutes,
         flag_color: taskData.flag_color
@@ -314,6 +319,7 @@ function TreeView({ projectId }) {
             onSubmit={handleAddRootTask}
             onCancel={() => setShowAddRoot(false)}
             submitLabel="Add Task"
+            projectStatuses={projectStatuses}
           />
         </div>
       )}
@@ -331,6 +337,7 @@ function TreeView({ projectId }) {
               task={task}
               projectId={projectId}
               onUpdate={loadTasks}
+              projectStatuses={projectStatuses}
             />
           ))}
         </div>

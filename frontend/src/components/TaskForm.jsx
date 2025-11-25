@@ -12,13 +12,22 @@ const FLAG_COLORS = [
   { name: 'pink', label: 'Pink', color: 'bg-pink-500' }
 ]
 
-function TaskForm({ onSubmit, onCancel, submitLabel = "Add" }) {
+// Helper to format status label
+const formatStatusLabel = (status) => {
+  return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+}
+
+function TaskForm({ onSubmit, onCancel, submitLabel = "Add", projectStatuses = null, defaultStatus = "backlog" }) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [tags, setTags] = useState('')
   const [hours, setHours] = useState('')
   const [minutes, setMinutes] = useState('')
   const [flagColor, setFlagColor] = useState(null)
+  const [status, setStatus] = useState(defaultStatus)
+
+  // Use provided statuses or fall back to defaults
+  const statuses = projectStatuses || ['backlog', 'in_progress', 'on_hold', 'done']
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -37,7 +46,8 @@ function TaskForm({ onSubmit, onCancel, submitLabel = "Add" }) {
       description: description.trim() || null,
       tags: tagList && tagList.length > 0 ? tagList : null,
       estimated_minutes: totalMinutes > 0 ? totalMinutes : null,
-      flag_color: flagColor
+      flag_color: flagColor,
+      status: status
     }
 
     onSubmit(taskData)
@@ -108,6 +118,22 @@ function TaskForm({ onSubmit, onCancel, submitLabel = "Add" }) {
             />
           </div>
         </div>
+      </div>
+
+      {/* Status */}
+      <div>
+        <label className="block text-xs text-gray-400 mb-1">Status</label>
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          className="w-full px-3 py-2 bg-cyber-darker border border-cyber-orange/50 rounded text-gray-100 text-sm focus:outline-none focus:border-cyber-orange"
+        >
+          {statuses.map((s) => (
+            <option key={s} value={s}>
+              {formatStatusLabel(s)}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Flag Color */}

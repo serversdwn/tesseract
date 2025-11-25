@@ -5,7 +5,12 @@ from . import models, schemas
 
 # Project CRUD
 def create_project(db: Session, project: schemas.ProjectCreate) -> models.Project:
-    db_project = models.Project(**project.model_dump())
+    project_data = project.model_dump()
+    # Ensure statuses has a default value if not provided
+    if project_data.get("statuses") is None:
+        project_data["statuses"] = models.DEFAULT_STATUSES
+
+    db_project = models.Project(**project_data)
     db.add(db_project)
     db.commit()
     db.refresh(db_project)
@@ -47,6 +52,11 @@ def delete_project(db: Session, project_id: int) -> bool:
 
 # Task CRUD
 def create_task(db: Session, task: schemas.TaskCreate) -> models.Task:
+    # Validate status against project's statuses
+    project = get_project(db, task.project_id)
+    if project and task.status not in project.statuses:
+        raise ValueError(f"Invalid status '{task.status}'. Must be one of: {', '.join(project.statuses)}")
+
     # Get max sort_order for siblings
     if task.parent_task_id:
         max_order = db.query(models.Task).filter(
@@ -104,13 +114,13 @@ def check_and_update_parent_status(db: Session, parent_id: int):
         return
 
     # Check if all children are done
-    all_done = all(child.status == models.TaskStatus.DONE for child in children)
+    all_done = all(child.status == "done" for child in children)
 
     if all_done:
         # Mark parent as done
         parent = get_task(db, parent_id)
-        if parent and parent.status != models.TaskStatus.DONE:
-            parent.status = models.TaskStatus.DONE
+        if parent and parent.status != "done":
+            parent.status = "done"
             db.commit()
 
             # Recursively check grandparent
@@ -126,12 +136,16 @@ def update_task(
         return None
 
     update_data = task.model_dump(exclude_unset=True)
-    status_changed = False
 
-    # Check if status is being updated
+    # Validate status against project's statuses if status is being updated
     if "status" in update_data:
+        project = get_project(db, db_task.project_id)
+        if project and update_data["status"] not in project.statuses:
+            raise ValueError(f"Invalid status '{update_data['status']}'. Must be one of: {', '.join(project.statuses)}")
         status_changed = True
         old_status = db_task.status
+    else:
+        status_changed = False
 
     for key, value in update_data.items():
         setattr(db_task, key, value)
@@ -140,7 +154,7 @@ def update_task(
     db.refresh(db_task)
 
     # If status changed to 'done' and this task has a parent, check if parent should auto-complete
-    if status_changed and db_task.status == models.TaskStatus.DONE and db_task.parent_task_id:
+    if status_changed and db_task.status == "done" and db_task.parent_task_id:
         check_and_update_parent_status(db, db_task.parent_task_id)
 
     return db_task
@@ -155,8 +169,13 @@ def delete_task(db: Session, task_id: int) -> bool:
     return True
 
 
-def get_tasks_by_status(db: Session, project_id: int, status: models.TaskStatus) -> List[models.Task]:
+def get_tasks_by_status(db: Session, project_id: int, status: str) -> List[models.Task]:
     """Get all tasks for a project with a specific status"""
+    # Validate status against project's statuses
+    project = get_project(db, project_id)
+    if project and status not in project.statuses:
+        raise ValueError(f"Invalid status '{status}'. Must be one of: {', '.join(project.statuses)}")
+
     return db.query(models.Task).filter(
         models.Task.project_id == project_id,
         models.Task.status == status
