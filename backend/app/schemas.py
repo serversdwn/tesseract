@@ -1,14 +1,14 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 from datetime import datetime
-from .models import TaskStatus
+from .models import DEFAULT_STATUSES
 
 
 # Task Schemas
 class TaskBase(BaseModel):
     title: str
     description: Optional[str] = None
-    status: TaskStatus = TaskStatus.BACKLOG
+    status: str = "backlog"
     parent_task_id: Optional[int] = None
     sort_order: int = 0
     estimated_minutes: Optional[int] = None
@@ -23,7 +23,7 @@ class TaskCreate(TaskBase):
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
-    status: Optional[TaskStatus] = None
+    status: Optional[str] = None
     parent_task_id: Optional[int] = None
     sort_order: Optional[int] = None
     estimated_minutes: Optional[int] = None
@@ -53,16 +53,18 @@ class ProjectBase(BaseModel):
 
 
 class ProjectCreate(ProjectBase):
-    pass
+    statuses: Optional[List[str]] = None
 
 
 class ProjectUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    statuses: Optional[List[str]] = None
 
 
 class Project(ProjectBase):
     id: int
+    statuses: List[str]
     created_at: datetime
     updated_at: datetime
 
@@ -79,7 +81,7 @@ class ProjectWithTasks(Project):
 class ImportSubtask(BaseModel):
     title: str
     description: Optional[str] = None
-    status: TaskStatus = TaskStatus.BACKLOG
+    status: str = "backlog"
     estimated_minutes: Optional[int] = None
     tags: Optional[List[str]] = None
     flag_color: Optional[str] = None
@@ -89,6 +91,7 @@ class ImportSubtask(BaseModel):
 class ImportProject(BaseModel):
     name: str
     description: Optional[str] = None
+    statuses: Optional[List[str]] = None
 
 
 class ImportData(BaseModel):

@@ -13,7 +13,7 @@ function App() {
               <h1 className="text-2xl font-bold text-cyber-orange">
                 TESSERACT
                 <span className="ml-3 text-sm text-gray-500">Task Decomposition Engine</span>
-                <span className="ml-2 text-xs text-gray-600">v{import.meta.env.VITE_APP_VERSION || '0.1.5'}</span>
+                <span className="ml-2 text-xs text-gray-600">v{import.meta.env.VITE_APP_VERSION || '0.1.6'}</span>
               </h1>
             </div>
             <SearchBar />

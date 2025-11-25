@@ -10,12 +10,21 @@ import { formatTimeWithTotal } from '../utils/format'
 import TaskMenu from './TaskMenu'
 import TaskForm from './TaskForm'
 
-const STATUSES = [
-  { key: 'backlog', label: 'Backlog', color: 'border-gray-600' },
-  { key: 'in_progress', label: 'In Progress', color: 'border-blue-500' },
-  { key: 'blocked', label: 'Blocked', color: 'border-red-500' },
-  { key: 'done', label: 'Done', color: 'border-green-500' }
-]
+// Helper to format status label
+const formatStatusLabel = (status) => {
+  return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+}
+
+// Helper to get status color based on common patterns
+const getStatusColor = (status) => {
+  const lowerStatus = status.toLowerCase()
+  if (lowerStatus === 'backlog') return 'border-gray-600'
+  if (lowerStatus === 'in_progress' || lowerStatus.includes('progress')) return 'border-blue-500'
+  if (lowerStatus === 'on_hold' || lowerStatus.includes('hold') || lowerStatus.includes('waiting')) return 'border-yellow-500'
+  if (lowerStatus === 'done' || lowerStatus.includes('complete')) return 'border-green-500'
+  if (lowerStatus.includes('blocked')) return 'border-red-500'
+  return 'border-purple-500' // default for custom statuses
+}
 
 const FLAG_COLORS = {
   red: 'bg-red-500',
@@ -60,9 +69,10 @@ function hasDescendantsInStatus(taskId, allTasks, status) {
   return getDescendantsInStatus(taskId, allTasks, status).length > 0
 }
 
-function TaskCard({ task, allTasks, onUpdate, onDragStart, isParent, columnStatus, expandedCards, setExpandedCards }) {
+function TaskCard({ task, allTasks, onUpdate, onDragStart, isParent, columnStatus, expandedCards, setExpandedCards, projectStatuses, projectId }) {
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(task.title)
+  const [showAddSubtask, setShowAddSubtask] = useState(false)
 
   // Use global expanded state
   const isExpanded = expandedCards[task.id] || false
@@ -87,6 +97,26 @@ function TaskCard({ task, allTasks, onUpdate, onDragStart, isParent, columnStatu
     if (!confirm('Delete this task and all its subtasks?')) return
     try {
       await deleteTask(task.id)
+      onUpdate()
+    } catch (err) {
+      alert(`Error: ${err.message}`)
+    }
+  }
+
+  const handleAddSubtask = async (taskData) => {
+    try {
+      await createTask({
+        project_id: parseInt(projectId),
+        parent_task_id: task.id,
+        title: taskData.title,
+        description: taskData.description,
+        status: taskData.status,
+        tags: taskData.tags,
+        estimated_minutes: taskData.estimated_minutes,
+        flag_color: taskData.flag_color
+      })
+      setShowAddSubtask(false)
+      setExpandedCards(prev => ({ ...prev, [task.id]: true }))
       onUpdate()
     } catch (err) {
       alert(`Error: ${err.message}`)
@@ -204,17 +234,38 @@ function TaskCard({ task, allTasks, onUpdate, onDragStart, isParent, columnStatu
               </div>
 
               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={() => setShowAddSubtask(true)}
+                  className="text-cyber-orange hover:text-cyber-orange-bright p-1"
+                  title="Add subtask"
+                >
+                  <Plus size={14} />
+                </button>
                 <TaskMenu
                   task={task}
                   onUpdate={onUpdate}
                   onDelete={handleDelete}
                   onEdit={() => setIsEditing(true)}
+                  projectStatuses={projectStatuses}
                 />
               </div>
             </div>
           </>
         )}
       </div>
+
+      {/* Add Subtask Form */}
+      {showAddSubtask && (
+        <div className="ml-6 mt-2">
+          <TaskForm
+            onSubmit={handleAddSubtask}
+            onCancel={() => setShowAddSubtask(false)}
+            submitLabel="Add Subtask"
+            projectStatuses={projectStatuses}
+            defaultStatus={columnStatus}
+          />
+        </div>
+      )}
 
       {/* Expanded children */}
       {isParent && isExpanded && childrenInColumn.length > 0 && (
@@ -230,6 +281,8 @@ function TaskCard({ task, allTasks, onUpdate, onDragStart, isParent, columnStatu
               columnStatus={columnStatus}
               expandedCards={expandedCards}
               setExpandedCards={setExpandedCards}
+              projectStatuses={projectStatuses}
+              projectId={projectId}
             />
           ))}
         </div>
@@ -238,7 +291,7 @@ function TaskCard({ task, allTasks, onUpdate, onDragStart, isParent, columnStatu
   )
 }
 
-function KanbanColumn({ status, allTasks, projectId, onUpdate, onDrop, onDragOver, expandedCards, setExpandedCards }) {
+function KanbanColumn({ status, allTasks, projectId, onUpdate, onDrop, onDragOver, expandedCards, setExpandedCards, projectStatuses }) {
   const [showAddTask, setShowAddTask] = useState(false)
 
   const handleAddTask = async (taskData) => {
@@ -248,7 +301,7 @@ function KanbanColumn({ status, allTasks, projectId, onUpdate, onDrop, onDragOve
         parent_task_id: null,
         title: taskData.title,
         description: taskData.description,
-        status: status.key,
+        status: taskData.status,
         tags: taskData.tags,
         estimated_minutes: taskData.estimated_minutes,
         flag_color: taskData.flag_color
@@ -306,6 +359,8 @@ function KanbanColumn({ status, allTasks, projectId, onUpdate, onDrop, onDragOve
             onSubmit={handleAddTask}
             onCancel={() => setShowAddTask(false)}
             submitLabel="Add Task"
+            projectStatuses={projectStatuses}
+            defaultStatus={status.key}
           />
         </div>
       )}
@@ -327,6 +382,8 @@ function KanbanColumn({ status, allTasks, projectId, onUpdate, onDrop, onDragOve
               columnStatus={status.key}
               expandedCards={expandedCards}
               setExpandedCards={setExpandedCards}
+              projectStatuses={projectStatuses}
+              projectId={projectId}
             />
           )
         })}
@@ -335,11 +392,19 @@ function KanbanColumn({ status, allTasks, projectId, onUpdate, onDrop, onDragOve
   )
 }
 
-function KanbanView({ projectId }) {
+function KanbanView({ projectId, project }) {
   const [allTasks, setAllTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [expandedCards, setExpandedCards] = useState({})
+
+  // Get statuses from project, or use defaults
+  const statuses = project?.statuses || ['backlog', 'in_progress', 'on_hold', 'done']
+  const statusesWithMeta = statuses.map(status => ({
+    key: status,
+    label: formatStatusLabel(status),
+    color: getStatusColor(status)
+  }))
 
   useEffect(() => {
     loadTasks()
@@ -430,7 +495,7 @@ function KanbanView({ projectId }) {
       </div>
 
       <div className="flex gap-4 overflow-x-auto pb-4">
-        {STATUSES.map(status => (
+        {statusesWithMeta.map(status => (
           <KanbanColumn
             key={status.key}
             status={status}
@@ -441,6 +506,7 @@ function KanbanView({ projectId }) {
             onDragOver={handleDragOver}
             expandedCards={expandedCards}
             setExpandedCards={setExpandedCards}
+            projectStatuses={statuses}
           />
         ))}
       </div>

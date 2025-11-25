@@ -98,13 +98,16 @@ def get_project_task_tree(project_id: int, db: Session = Depends(get_db)):
 @app.get("/api/projects/{project_id}/tasks/by-status/{status}", response_model=List[schemas.Task])
 def get_tasks_by_status(
     project_id: int,
-    status: models.TaskStatus,
+    status: str,
     db: Session = Depends(get_db)
 ):
     """Get all tasks for a project filtered by status (for Kanban view)"""
     if not crud.get_project(db, project_id):
         raise HTTPException(status_code=404, detail="Project not found")
-    return crud.get_tasks_by_status(db, project_id, status)
+    try:
+        return crud.get_tasks_by_status(db, project_id, status)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.post("/api/tasks", response_model=schemas.Task, status_code=201)
@@ -116,7 +119,10 @@ def create_task(task: schemas.TaskCreate, db: Session = Depends(get_db)):
     if task.parent_task_id and not crud.get_task(db, task.parent_task_id):
         raise HTTPException(status_code=404, detail="Parent task not found")
 
-    return crud.create_task(db, task)
+    try:
+        return crud.create_task(db, task)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.get("/api/tasks/{task_id}", response_model=schemas.Task)
@@ -131,10 +137,13 @@ def get_task(task_id: int, db: Session = Depends(get_db)):
 @app.put("/api/tasks/{task_id}", response_model=schemas.Task)
 def update_task(task_id: int, task: schemas.TaskUpdate, db: Session = Depends(get_db)):
     """Update a task"""
-    db_task = crud.update_task(db, task_id, task)
-    if not db_task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    return db_task
+    try:
+        db_task = crud.update_task(db, task_id, task)
+        if not db_task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        return db_task
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.delete("/api/tasks/{task_id}", status_code=204)
@@ -188,6 +197,27 @@ def search_tasks(
 
 # ========== JSON IMPORT ENDPOINT ==========
 
+def _validate_task_statuses_recursive(
+    tasks: List[schemas.ImportSubtask],
+    valid_statuses: List[str],
+    path: str = ""
+) -> None:
+    """Recursively validate all task statuses against the project's valid statuses"""
+    for idx, task_data in enumerate(tasks):
+        task_path = f"{path}.tasks[{idx}]" if path else f"tasks[{idx}]"
+        if task_data.status not in valid_statuses:
+            raise ValueError(
+                f"Invalid status '{task_data.status}' at {task_path}. "
+                f"Must be one of: {', '.join(valid_statuses)}"
+            )
+        if task_data.subtasks:
+            _validate_task_statuses_recursive(
+                task_data.subtasks,
+                valid_statuses,
+                f"{task_path}.subtasks"
+            )
+
+
 def _import_tasks_recursive(
     db: Session,
     project_id: int,
@@ -228,7 +258,8 @@ def import_from_json(import_data: schemas.ImportData, db: Session = Depends(get_
     {
         "project": {
             "name": "Project Name",
-            "description": "Optional description"
+            "description": "Optional description",
+            "statuses": ["backlog", "in_progress", "on_hold", "done"]  // Optional
         },
         "tasks": [
             {
@@ -246,14 +277,25 @@ def import_from_json(import_data: schemas.ImportData, db: Session = Depends(get_
         ]
     }
     """
-    # Create the project
+    # Create the project with optional statuses
     project = crud.create_project(
         db,
         schemas.ProjectCreate(
             name=import_data.project.name,
-            description=import_data.project.description
+            description=import_data.project.description,
+            statuses=import_data.project.statuses
         )
     )
+
+    # Validate all task statuses before importing
+    if import_data.tasks:
+        try:
+            _validate_task_statuses_recursive(import_data.tasks, project.statuses)
+        except ValueError as e:
+            # Rollback the project creation if validation fails
+            db.delete(project)
+            db.commit()
+            raise HTTPException(status_code=400, detail=str(e))
 
     # Recursively import tasks
     tasks_created = _import_tasks_recursive(
