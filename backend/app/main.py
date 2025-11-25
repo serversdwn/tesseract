@@ -6,20 +6,21 @@ import json
 
 from . import models, schemas, crud
 from .database import engine, get_db
+from .settings import settings
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="Tesseract - Nested Todo Tree API",
-    description="API for managing deeply nested todo trees",
-    version="1.0.0"
+    title=settings.api_title,
+    description=settings.api_description,
+    version=settings.api_version
 )
 
 # CORS middleware for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Vite default port
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

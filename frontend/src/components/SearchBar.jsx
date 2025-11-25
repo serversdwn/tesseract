@@ -84,9 +84,10 @@ function SearchBar() {
       return
     }
 
+    const debounceMs = parseInt(import.meta.env.VITE_SEARCH_DEBOUNCE_MS || '300')
     const timeoutId = setTimeout(() => {
       handleSearch(query)
-    }, 300)
+    }, debounceMs)
 
     return () => clearTimeout(timeoutId)
   }, [query, selectedProjects])
