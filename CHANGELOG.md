@@ -5,6 +5,70 @@ All notable changes to TESSERACT will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.6] - 2025-01-25
+
+### Added
+- **Dynamic Status Management System**
+  - Per-project customizable status workflows (replacing hardcoded statuses)
+  - New default statuses: `backlog`, `in_progress`, `on_hold`, `done` (removed `blocked`)
+  - Project Settings modal with comprehensive status management:
+    - Drag-and-drop status reordering
+    - Add new custom statuses
+    - Rename existing statuses (inline editing)
+    - Delete unused statuses with validation
+    - Task count display per status
+    - Warning dialogs when attempting to delete statuses with tasks
+  - Settings button (⚙️) in project header to access configuration
+  - Status validation in backend CRUD operations
+  - Database migration for `projects.statuses` JSON column
+
+- **Enhanced Task Creation**
+  - Status selector dropdown in TaskForm component
+  - Select status when creating tasks (no longer defaults to "backlog" only)
+  - Works across Tree View and Kanban View
+  - Defaults to current column status in Kanban View
+  - Defaults to "backlog" in Tree View
+
+- **Subtask Creation in Kanban View**
+  - "+" button on task cards to add subtasks directly in Kanban
+  - Button appears on hover next to task menu
+  - Opens TaskForm with status defaulted to current column
+  - Automatically expands parent card after creating subtask
+  - Full parity with Tree View subtask functionality
+
+### Changed
+- Removed hardcoded status enums from backend (`TaskStatus` enum removed)
+- Task status field changed from Enum to String in database
+- All status references now dynamic (backend, frontend, Kanban UI)
+- Status formatting helpers added for consistent display
+- Status colors now pattern-matched based on status names
+- Existing tasks migrated from uppercase enum format to lowercase
+
+### Backend Changes
+- `models.py`: Added `DEFAULT_STATUSES` constant, `statuses` JSON column to Project, changed Task.status to String
+- `schemas.py`: Changed status from TaskStatus enum to str, added statuses to Project schemas
+- `crud.py`: Added status validation in create_task, update_task, get_tasks_by_status
+- `main.py`: Added status validation to endpoints and JSON import
+
+### Frontend Changes
+- `ProjectSettings.jsx`: New component for managing project status workflows
+- `TaskForm.jsx`: Added status selector with dynamic status list
+- `KanbanView.jsx`: Dynamic status columns, subtask creation, removed hardcoded STATUSES
+- `TaskMenu.jsx`: Dynamic status dropdown using projectStatuses prop
+- `TreeView.jsx`: Dynamic status helpers, passes statuses to forms
+- `ProjectView.jsx`: Integrated ProjectSettings modal with gear icon button
+
+### Fixed
+- Database schema migration for projects.statuses column
+- Task status migration from uppercase (BACKLOG, IN_PROGRESS, DONE) to lowercase format
+- 51 existing tasks successfully migrated to new status format
+
+### Technical Details
+- New database column: `projects.statuses` (JSON, default: ["backlog", "in_progress", "on_hold", "done"])
+- Status validation at multiple layers (CRUD, API endpoints, frontend)
+- Helper functions for status formatting and color coding
+- Prop drilling of projectStatuses through component hierarchy
+
 ## [0.1.5] - 2025-01-XX
 
 ### Added
